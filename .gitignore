@@ -49,3 +49,4 @@ wandb/
 /shape_bench
 /db_dev
 /mma_autotune
+/ternary_gemm

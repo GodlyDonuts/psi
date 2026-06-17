@@ -81,20 +81,23 @@ int main() {
 
         // Candidate configs (FM*FN<=8 to avoid register spill). The autotuner skips any that don't
         // divide a given shape or that blow threadgroup memory.
-        // Top performers from the unpadded sweep, now x bank-conflict padding PAD in {0,4,8}.
-        std::vector<Cfg> cfgs;
-        for (int p : {0, 4, 8}) {
-            cfgs.push_back({64,64,16,2,4,p});   // champ: 8 sg, 4x2 frags
-            cfgs.push_back({32,32,16,2,2,p});   // 4 sg, 2x2 frags (best on attn-proj)
-            cfgs.push_back({128,32,16,4,2,p});  // 8 sg, 4x2 frags
-            cfgs.push_back({64,64,16,4,2,p});   // 8 sg, 2x4 frags
-        }
-        Shape shapes[] = {
+        // MLX-style big register tiles: FEWER simdgroups, MORE 8x8 fragments per thread (ILP over
+        // occupancy, the Volkov bet). MLX's fp32 GEMM uses 4 sg / 4x4=16 frags + padding=4. We were
+        // SKIPPING 16-frag configs before (the FM*FN<=8 guard); now allowed up to 16. All PAD=4.
+        std::vector<Cfg> cfgs = {
+            {64,64,16,4,2,4},    // CHAMPION reference: 8 sg, 2x4=8 frags
+            {64,64,16,2,2,4},    // MLX-STYLE: 4 sg, 4x4=16 frags
+            {64,64,8,2,2,4}, {64,64,32,2,2,4},   // MLX-style, BK variants
+            {32,64,16,2,2,4},    // 4 sg, 2x4=8 frags
+            {64,32,16,2,2,4},    // 4 sg, 4x2=8 frags
+            {128,64,16,4,2,4},   // 8 sg, 4x4=16 frags (tall M)
+            {64,128,16,2,4,4},   // 8 sg, 4x4=16 frags (wide N)
+            {128,128,16,4,4,4},  // 16 sg, 4x4=16 frags (big block)
+        };
+        Shape shapes[] = {   // laggard-focused: mlp-up + squares (where MLX uses wide tiles)
+            {8192,384,1536,"mlp-up",       1916},
             {1024,1024,1024,"square-1024", 1678},
             {2048,2048,2048,"square-2048", 1489},
-            {8192,384,1536,"mlp-up",       1916},
-            {8192,1536,384,"mlp-down",     1414},
-            {8192,384,384, "attn-proj",    1435},
         };
         for (auto s : shapes) {
             int M=s.M,K=s.K,N=s.N;
@@ -119,7 +122,7 @@ int main() {
                 char label[56]; std::snprintf(label,sizeof(label),"%dx%d/%dsg/bk%d/%dx%df/p%d",c.BM,c.BN,NSG,c.BK,FM,FN,c.PAD);
                 // validity for this shape
                 if (M%c.BM||N%c.BN||K%c.BK||c.BM%(c.SGY*8)||c.BN%(c.SGX*8)||(c.BM*c.BK)%4||(c.BK*c.BN)%4||c.PAD%4) continue;
-                if (FM*FN>8 || tgmem>32768 || NT>1024) continue;
+                if (FM*FN>16 || tgmem>32768 || NT>1024) continue;   // allow up to 16 frags (MLX-style)
                 std::string def="#define BM "+std::to_string(c.BM)+"\n#define BN "+std::to_string(c.BN)+
                     "\n#define BK "+std::to_string(c.BK)+"\n#define SGY "+std::to_string(c.SGY)+
                     "\n#define SGX "+std::to_string(c.SGX)+"\n#define FM "+std::to_string(FM)+
