@@ -37,9 +37,8 @@ Research-first: landscape sweep → design doc → build.
 - [x] Design doc — see [docs/DESIGN.md](docs/DESIGN.md)
 - [x] Radicalism map — radical in every layer, unified by capability-per-bit: see [docs/RADICAL.md](docs/RADICAL.md)
 - [x] Quality bar — definition-of-done per component: see [docs/QUALITY.md](docs/QUALITY.md)
-- [ ] Decide target capability — *recommended:* reasoning/math specialist, made tiny via
-  distillation + a ternary (≈1.58-bit) track (see DESIGN §2). Your call.
-- [~] Custom stack — scalar ✅ (Step 0) · tensor autograd ✅ (Step 1) · **psi-nano GPT ✅ (Step 2)** → fused kernels → multi-device
+- [x] Target & showcase — a **model zoo** (`psi-stories`, `psi-chess`, …) that showcases the framework: see [docs/SHOWCASE.md](docs/SHOWCASE.md)
+- [~] Custom stack — scalar ✅ · tensor ✅ · psi-nano GPT ✅ · **framework-ize (config/tokenizer/data/checkpoints) ← next** → GPU kernels → model zoo
 - [ ] First trained model + eval against size-matched baselines
 
 ## Build
