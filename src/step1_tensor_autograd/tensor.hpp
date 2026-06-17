@@ -26,8 +26,11 @@
 #include <memory>
 #include <random>
 #include <thread>
+#include <type_traits>
 #include <unordered_set>
 #include <vector>
+
+#include "../step3_metal/metal_backend.h"   // GPU matmul backend (used only in the float build)
 
 namespace psi {
 
@@ -128,6 +131,28 @@ inline void parallel_rows(int rows, long work, F f) {
 // Ops. Each computes the forward, then records the local backward.
 // ---------------------------------------------------------------------------
 
+// GPU dispatch helpers — templated so `if constexpr` genuinely discards the Metal calls in the
+// double (oracle) build (a non-template `if constexpr` would still type-check the dead branch).
+// Return true if the GPU handled the op.
+template <class T>
+inline bool gpu_matmul_fwd(const T* a, const T* b, T* c, int m, int k, int n, long work) {
+    if constexpr (std::is_same<T, float>::value) {
+        if (metal_available() && work >= (1L << 20)) { metal_matmul(a, b, c, m, k, n); return true; }
+    }
+    return false;
+}
+template <class T>
+inline bool gpu_matmul_bwd(const T* dc, const T* a, const T* b, T* da, T* db, int m, int k, int n, long work) {
+    if constexpr (std::is_same<T, float>::value) {
+        if (metal_available() && work >= (1L << 20)) {
+            metal_matmul_nt(dc, b, da, m, k, n);   // dA += dC @ B^T
+            metal_matmul_tn(a, dc, db, k, n, m);   // dB += A^T @ dC
+            return true;
+        }
+    }
+    return false;
+}
+
 // C[m,n] = A[m,k] @ B[k,n].  dA = dC @ B^T,  dB = A^T @ dC.
 inline Tensor matmul(const Tensor& A, const Tensor& B) {
     assert(A.shape().size() == 2 && B.shape().size() == 2);
@@ -136,42 +161,48 @@ inline Tensor matmul(const Tensor& A, const Tensor& B) {
     Tensor out = make_out({m, n}, "matmul", {A.node, B.node});
     const auto& a = A.data(); const auto& b = B.data(); auto& c = out.data();
     long work = (long)m * k * n;
-    // forward: i-l-j (contiguous inner -> vectorizes), parallel over disjoint output rows i.
-    parallel_rows(m, work, [&](int i0, int i1) {
-        for (int i = i0; i < i1; ++i)
-            for (int l = 0; l < k; ++l) {
-                real ail = a[i * k + l];
-                const real* brow = &b[l * n];
-                real* crow = &c[i * n];
-                for (int j = 0; j < n; ++j) crow[j] += ail * brow[j];
-            }
-    });
+    bool did_gpu = gpu_matmul_fwd(a.data(), b.data(), c.data(), m, k, n, work);  // GPU when float+big
+    if (!did_gpu) {
+        // forward: i-l-j (contiguous inner -> vectorizes), parallel over disjoint output rows i.
+        parallel_rows(m, work, [&](int i0, int i1) {
+            for (int i = i0; i < i1; ++i)
+                for (int l = 0; l < k; ++l) {
+                    real ail = a[i * k + l];
+                    const real* brow = &b[l * n];
+                    real* crow = &c[i * n];
+                    for (int j = 0; j < n; ++j) crow[j] += ail * brow[j];
+                }
+        });
+    }
     TensorNode *Ap = A.node.get(), *Bp = B.node.get(), *Op = out.node.get();
     out.node->backward_fn = [Ap, Bp, Op, m, k, n] {
         const auto& dc = Op->grad; const auto& a = Ap->data; const auto& b = Bp->data;
         auto& da = Ap->grad; auto& db = Bp->grad;
         long work = (long)m * k * n;
-        // dA = dC @ B^T, parallel over disjoint rows i of dA.
-        parallel_rows(m, work, [&](int i0, int i1) {
-            for (int i = i0; i < i1; ++i)
-                for (int l = 0; l < k; ++l) {
-                    real s = 0;
-                    const real* dcrow = &dc[i * n];
-                    const real* brow = &b[l * n];
-                    for (int j = 0; j < n; ++j) s += dcrow[j] * brow[j];
-                    da[i * k + l] += s;
-                }
-        });
-        // dB = A^T @ dC, l-outer so threads own disjoint rows l of dB (contiguous inner j).
-        parallel_rows(k, work, [&](int l0, int l1) {
-            for (int l = l0; l < l1; ++l)
-                for (int i = 0; i < m; ++i) {
-                    real ail = a[i * k + l];
-                    const real* dcrow = &dc[i * n];
-                    real* dbrow = &db[l * n];
-                    for (int j = 0; j < n; ++j) dbrow[j] += ail * dcrow[j];
-                }
-        });
+        bool did_gpu = gpu_matmul_bwd(dc.data(), a.data(), b.data(), da.data(), db.data(), m, k, n, work);
+        if (!did_gpu) {
+            // dA = dC @ B^T, parallel over disjoint rows i of dA.
+            parallel_rows(m, work, [&](int i0, int i1) {
+                for (int i = i0; i < i1; ++i)
+                    for (int l = 0; l < k; ++l) {
+                        real s = 0;
+                        const real* dcrow = &dc[i * n];
+                        const real* brow = &b[l * n];
+                        for (int j = 0; j < n; ++j) s += dcrow[j] * brow[j];
+                        da[i * k + l] += s;
+                    }
+            });
+            // dB = A^T @ dC, l-outer so threads own disjoint rows l of dB (contiguous inner j).
+            parallel_rows(k, work, [&](int l0, int l1) {
+                for (int l = l0; l < l1; ++l)
+                    for (int i = 0; i < m; ++i) {
+                        real ail = a[i * k + l];
+                        const real* dcrow = &dc[i * n];
+                        real* dbrow = &db[l * n];
+                        for (int j = 0; j < n; ++j) dbrow[j] += ail * dcrow[j];
+                    }
+            });
+        }
     };
     return out;
 }

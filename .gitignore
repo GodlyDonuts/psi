@@ -26,6 +26,7 @@ cmake-build-*/
 /psi_profile
 /matmul_metal
 /bridge_test
+/agtest
 
 # ML artifacts — never commit weights, datasets, or logs
 *.bin

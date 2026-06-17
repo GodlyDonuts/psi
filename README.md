@@ -38,7 +38,7 @@ Research-first: landscape sweep → design doc → build.
 - [x] Radicalism map — radical in every layer, unified by capability-per-bit: see [docs/RADICAL.md](docs/RADICAL.md)
 - [x] Quality bar — definition-of-done per component: see [docs/QUALITY.md](docs/QUALITY.md)
 - [x] Target & showcase — a **model zoo** (`psi-stories`, `psi-chess`, …) that showcases the framework: see [docs/SHOWCASE.md](docs/SHOWCASE.md)
-- [~] Custom stack — scalar ✅ · tensor ✅ · psi-nano GPT ✅ · framework-ize ✅ · **GPU kernels: autotuned Metal matmul, 3 engines + best-of-N timing, all bit-exact ← perf tuning (occupancy + larger sizes, then fused attention)** → model zoo
+- [~] Custom stack — scalar ✅ · tensor ✅ · psi-nano ✅ · framework ✅ · **GPU: autotuned Metal matmul + wired into the autograd (fwd+bwd, bit-exact, CPU fallback) ✅ ← fused attention + perf tuning** → model zoo
 - [ ] First trained model + eval against size-matched baselines
 
 ## Build
@@ -69,7 +69,10 @@ clang++ -std=c++17 -O2 src/step1_tensor_autograd/main.cpp -o step1 && ./step1
 # transformer-op grad checks (all PASS):
 clang++ -std=c++17 -O2 src/step2_psi_nano/gradcheck.cpp -o step2_gradcheck && ./step2_gradcheck
 # train psi-nano (~20s with the fast flags) then sample — or chat with it interactively:
-clang++ -std=c++17 -O3 -march=native -ffast-math -DPSI_REAL=float src/step2_psi_nano/main.cpp -o psi_nano
+# the float build links the Metal GPU matmul backend (CPU fallback if no Metal):
+clang++ -std=c++17 -O3 -march=native -ffast-math -DPSI_REAL=float \
+  src/step2_psi_nano/main.cpp src/step3_metal/metal_backend.mm \
+  -framework Metal -framework Foundation -o psi_nano
 ./psi_nano train                      # train on the embedded corpus -> saves psi_model.bin (+ train/val loss)
 ./psi_nano train mytext.txt 3000      # or train on your own text file for N steps
 ./psi_nano gen  psi_model.bin "the "  # load the checkpoint and generate (no retrain)
