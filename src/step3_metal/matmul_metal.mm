@@ -97,6 +97,40 @@ kernel void mm(device const float* A [[buffer(0)]], device const float* B [[buff
 }
 )";
 
+// Tiled hardware-matrix engine: one simdgroup computes a 32x32 block of C as a 4x4 grid of 8x8 MMA
+// fragments, with the A/B tiles staged in threadgroup memory so the staged data is reused across the
+// 16 fragments (the reuse the naive MMA kernel lacked). Assumes M,N % 32 == 0 and K % 8 == 0.
+static const char* kSimdTiled = R"(
+#include <metal_stdlib>
+using namespace metal;
+kernel void mm(device const float* A [[buffer(0)]], device const float* B [[buffer(1)]],
+               device float* C [[buffer(2)]], constant uint& M [[buffer(3)]],
+               constant uint& K [[buffer(4)]], constant uint& N [[buffer(5)]],
+               uint2 lid [[thread_position_in_threadgroup]],
+               uint2 bid [[threadgroup_position_in_grid]]) {
+    uint tid = lid.x;
+    uint blockRow = bid.y * 32, blockCol = bid.x * 32;
+    threadgroup float As[32 * 8];     // 32 rows x BK(=8)
+    threadgroup float Bs[8 * 32];     // BK(=8) x 32 cols
+    simdgroup_float8x8 acc[4][4];
+    for (uint i = 0; i < 4; ++i) for (uint j = 0; j < 4; ++j) acc[i][j] = make_filled_simdgroup_matrix<float,8,8>(0.0f);
+
+    for (uint k0 = 0; k0 < K; k0 += 8) {
+        for (uint i = tid; i < 32 * 8; i += 32) { uint r = i / 8,  c = i % 8;  As[i] = A[(blockRow + r) * K + (k0 + c)]; }
+        for (uint i = tid; i < 8 * 32; i += 32) { uint r = i / 32, c = i % 32; Bs[i] = B[(k0 + r) * N + (blockCol + c)]; }
+        threadgroup_barrier(mem_flags::mem_threadgroup);
+        simdgroup_float8x8 af[4], bf[4];
+        for (uint i = 0; i < 4; ++i) simdgroup_load(af[i], As + i * 64, 8);    // A row-block i (stride 8)
+        for (uint j = 0; j < 4; ++j) simdgroup_load(bf[j], Bs + j * 8, 32);    // B col-block j (stride 32)
+        for (uint i = 0; i < 4; ++i) for (uint j = 0; j < 4; ++j)
+            simdgroup_multiply_accumulate(acc[i][j], af[i], bf[j], acc[i][j]);
+        threadgroup_barrier(mem_flags::mem_threadgroup);
+    }
+    for (uint i = 0; i < 4; ++i) for (uint j = 0; j < 4; ++j)
+        simdgroup_store(acc[i][j], C + (blockRow + i * 8) * N + (blockCol + j * 8), N);
+}
+)";
+
 struct Cfg { int BM, BN, BK, TM, TN; };
 
 int main() {
@@ -149,11 +183,16 @@ int main() {
             const float* Cg = static_cast<const float*>([bC contents]);
             double maxerr = 0; for (int i = 0; i < M*N; ++i) maxerr = std::fmax(maxerr, std::fabs(Cg[i]-Cref[i]));
             double rel = maxerr / maxref;
-            const int iters = 50;
-            auto t0 = std::chrono::high_resolution_clock::now();
-            for (int it = 0; it < iters; ++it) encode(pso, grid, tg);
-            double sec = std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - t0).count();
-            double gf = 2.0 * M * K * N * iters / sec / 1e9;
+            // best-of-N: background load (Chrome, etc.) only ever ADDS time, so the fastest rep is
+            // the cleanest estimate of the kernel's true speed and makes the ranking load-robust.
+            const int reps = 5, iters = 30;
+            double bestSec = 1e30;
+            for (int r = 0; r < reps; ++r) {
+                auto t0 = std::chrono::high_resolution_clock::now();
+                for (int it = 0; it < iters; ++it) encode(pso, grid, tg);
+                bestSec = std::fmin(bestSec, std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - t0).count());
+            }
+            double gf = 2.0 * M * K * N * iters / bestSec / 1e9;
             std::printf("  %-22s rel=%.0e %s  %7.1f GFLOP/s  (%4.1f%% peak)\n",
                         label, rel, rel < 1e-3 ? "PASS" : "FAIL", gf, 100.0 * gf / 2600.0);
             return rel < 1e-3 ? gf : 0;
@@ -180,10 +219,15 @@ int main() {
                                  MTLSizeMake((N+c.BN-1)/c.BN, (M+c.BM-1)/c.BM, 1), MTLSizeMake(NT,1,1));
             if (gf > bestGf) { bestGf = gf; bestLabel = buf; }
         }
-        {   // hardware matrix-unit engine
+        {   // hardware matrix-unit engine (naive: no threadgroup reuse)
             double gf = evaluate("simdgroup_matrix 8x8", compile(kSimd),
                                  MTLSizeMake(N/8, M/8, 1), MTLSizeMake(32, 1, 1));
             if (gf > bestGf) { bestGf = gf; bestLabel = "simdgroup_matrix 8x8"; }
+        }
+        {   // tiled hardware-matrix engine (staged reuse + MMA)
+            double gf = evaluate("simd-tiled 32x32", compile(kSimdTiled),
+                                 MTLSizeMake(N/32, M/32, 1), MTLSizeMake(32, 1, 1));
+            if (gf > bestGf) { bestGf = gf; bestLabel = "simd-tiled 32x32"; }
         }
         std::printf("BEST: %s  @ %.1f GFLOP/s (%.1f%% peak, %.1fx naive)\n",
                     bestLabel.c_str(), bestGf, 100.0 * bestGf / 2600.0, bestGf / 148.0);

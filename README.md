@@ -38,7 +38,7 @@ Research-first: landscape sweep → design doc → build.
 - [x] Radicalism map — radical in every layer, unified by capability-per-bit: see [docs/RADICAL.md](docs/RADICAL.md)
 - [x] Quality bar — definition-of-done per component: see [docs/QUALITY.md](docs/QUALITY.md)
 - [x] Target & showcase — a **model zoo** (`psi-stories`, `psi-chess`, …) that showcases the framework: see [docs/SHOWCASE.md](docs/SHOWCASE.md)
-- [~] Custom stack — scalar ✅ · tensor ✅ · psi-nano GPT ✅ · framework-ize ✅ · **GPU kernels: autotuned Metal matmul, 2 engines (scalar-tiled + simdgroup_matrix), ~420 GFLOP/s, bit-exact ← optimizing (tiled-MMA + fused attention next)** → model zoo
+- [~] Custom stack — scalar ✅ · tensor ✅ · psi-nano GPT ✅ · framework-ize ✅ · **GPU kernels: autotuned Metal matmul, 3 engines + best-of-N timing, all bit-exact ← perf tuning (occupancy + larger sizes, then fused attention)** → model zoo
 - [ ] First trained model + eval against size-matched baselines
 
 ## Build
