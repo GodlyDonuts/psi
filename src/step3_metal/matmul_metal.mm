@@ -15,6 +15,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <random>
 #include <string>
 #include <vector>
@@ -133,14 +134,15 @@ kernel void mm(device const float* A [[buffer(0)]], device const float* B [[buff
 
 struct Cfg { int BM, BN, BK, TM, TN; };
 
-int main() {
+int main(int argc, char** argv) {
+    int S = (argc > 1) ? std::atoi(argv[1]) : 512;     // square matmul size (sweep 512/1024/2048)
     @autoreleasepool {
         id<MTLDevice> dev = MTLCreateSystemDefaultDevice();
         if (!dev) { std::printf("no Metal device\n"); return 1; }
         std::printf("device: %s   (peak ~2.6 TFLOP/s fp32 on M1)\n", dev.name.UTF8String);
         id<MTLCommandQueue> queue = [dev newCommandQueue];
 
-        const int M = 512, K = 512, N = 512;
+        const int M = S, K = S, N = S;
         std::mt19937 rng(0);
         std::normal_distribution<float> dist(0, 1);
         std::vector<float> A(M * K), B(K * N), Cref(M * N);
