@@ -76,6 +76,27 @@ kernel void mm(device const float* A [[buffer(0)]], device const float* B [[buff
 }
 )";
 
+// Hardware matrix-unit engine: each simdgroup (32 threads) computes an 8x8 output tile using the
+// GPU's simdgroup_matrix MMA units. Assumes M,N,K % 8 == 0 (512 qualifies).
+static const char* kSimd = R"(
+#include <metal_stdlib>
+using namespace metal;
+kernel void mm(device const float* A [[buffer(0)]], device const float* B [[buffer(1)]],
+               device float* C [[buffer(2)]], constant uint& M [[buffer(3)]],
+               constant uint& K [[buffer(4)]], constant uint& N [[buffer(5)]],
+               uint2 tgid [[threadgroup_position_in_grid]]) {
+    uint row = tgid.y * 8, col = tgid.x * 8;
+    simdgroup_float8x8 acc = make_filled_simdgroup_matrix<float, 8, 8>(0.0f);
+    for (uint k = 0; k < K; k += 8) {
+        simdgroup_float8x8 a, b;
+        simdgroup_load(a, A + row * K + k, K);      // 8x8 tile of A at (row, k), row-stride K
+        simdgroup_load(b, B + k * N + col, N);      // 8x8 tile of B at (k, col), row-stride N
+        simdgroup_multiply_accumulate(acc, a, b, acc);   // acc = a*b + acc
+    }
+    simdgroup_store(acc, C + row * N + col, N);
+}
+)";
+
 struct Cfg { int BM, BN, BK, TM, TN; };
 
 int main() {
@@ -146,7 +167,7 @@ int main() {
         std::vector<Cfg> cfgs = {
             {64,64,8,4,4}, {64,64,16,4,4}, {128,128,8,8,8}, {128,64,8,8,4}, {64,128,16,4,8}, {128,128,16,8,8}
         };
-        Cfg best{}; double bestGf = 0;
+        std::string bestLabel; double bestGf = 0;
         for (auto& c : cfgs) {
             int NT = (c.BM/c.TM) * (c.BN/c.TN);
             long tg = (long)(c.BM*c.BK + c.BK*c.BN) * 4;
@@ -157,10 +178,15 @@ int main() {
                 "\n#define TN " + std::to_string(c.TN) + "\n#define NT " + std::to_string(NT) + "\n";
             double gf = evaluate(buf, compile(def + kTiledBody),
                                  MTLSizeMake((N+c.BN-1)/c.BN, (M+c.BM-1)/c.BM, 1), MTLSizeMake(NT,1,1));
-            if (gf > bestGf) { bestGf = gf; best = c; }
+            if (gf > bestGf) { bestGf = gf; bestLabel = buf; }
         }
-        std::printf("BEST: tiled %d-%d-%d/%dx%d  @ %.1f GFLOP/s (%.1f%% peak, %.1fx the naive)\n",
-                    best.BM,best.BN,best.BK,best.TM,best.TN, bestGf, 100.0*bestGf/2600.0, bestGf/151.0);
+        {   // hardware matrix-unit engine
+            double gf = evaluate("simdgroup_matrix 8x8", compile(kSimd),
+                                 MTLSizeMake(N/8, M/8, 1), MTLSizeMake(32, 1, 1));
+            if (gf > bestGf) { bestGf = gf; bestLabel = "simdgroup_matrix 8x8"; }
+        }
+        std::printf("BEST: %s  @ %.1f GFLOP/s (%.1f%% peak, %.1fx naive)\n",
+                    bestLabel.c_str(), bestGf, 100.0 * bestGf / 2600.0, bestGf / 148.0);
     }
     return 0;
 }

@@ -38,7 +38,7 @@ Research-first: landscape sweep → design doc → build.
 - [x] Radicalism map — radical in every layer, unified by capability-per-bit: see [docs/RADICAL.md](docs/RADICAL.md)
 - [x] Quality bar — definition-of-done per component: see [docs/QUALITY.md](docs/QUALITY.md)
 - [x] Target & showcase — a **model zoo** (`psi-stories`, `psi-chess`, …) that showcases the framework: see [docs/SHOWCASE.md](docs/SHOWCASE.md)
-- [~] Custom stack — scalar ✅ · tensor ✅ · psi-nano GPT ✅ · framework-ize ✅ · **GPU kernels: autotuned Metal matmul (367 GFLOP/s, bit-exact) ← optimizing (simdgroup_matrix + fused attention next)** → model zoo
+- [~] Custom stack — scalar ✅ · tensor ✅ · psi-nano GPT ✅ · framework-ize ✅ · **GPU kernels: autotuned Metal matmul, 2 engines (scalar-tiled + simdgroup_matrix), ~420 GFLOP/s, bit-exact ← optimizing (tiled-MMA + fused attention next)** → model zoo
 - [ ] First trained model + eval against size-matched baselines
 
 ## Build
@@ -88,8 +88,9 @@ clang++ -x objective-c++ -fobjc-arc -O2 -std=c++17 src/step3_metal/matmul_metal.
   -framework Metal -framework Foundation -o matmul_metal && ./matmul_metal
 ```
 
-_Result (Apple M1, every config bit-exact vs CPU): an **autotuner** sweeps register-tile configs and
-picks the best — **367 GFLOP/s** (~10× the CPU, 2.4× naive). Tellingly, the "obvious" big tile
-(128²/8×8) was the **worst** (61 GFLOP/s — too few threadgroups starve the GPU cores); only
-measurement reveals that, which is the whole point of autotuning across M1/M4/M5. ~14% of peak so far
-(per-dispatch overhead included); `simdgroup_matrix` + fused attention next. Unified-memory zero-copy buffers._
+_Result (Apple M1, every config bit-exact vs CPU): an **autotuner** sweeps two engines — scalar
+register-tiling and the GPU's `simdgroup_matrix` hardware units — and picks the best (~**420 GFLOP/s**,
+~10× CPU). Two findings only measurement reveals: the "obvious" big 128² tile is the *worst* (starves
+the cores), and a *naive* `simdgroup_matrix` kernel actually *loses* to well-tiled scalar (it lacks
+threadgroup-memory reuse) — exactly why we autotune instead of assume. ~16% of peak; a tiled-MMA kernel
+and fused attention are next. Unified-memory zero-copy._
