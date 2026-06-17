@@ -38,7 +38,7 @@ Research-first: landscape sweep → design doc → build.
 - [x] Radicalism map — radical in every layer, unified by capability-per-bit: see [docs/RADICAL.md](docs/RADICAL.md)
 - [x] Quality bar — definition-of-done per component: see [docs/QUALITY.md](docs/QUALITY.md)
 - [x] Target & showcase — a **model zoo** (`psi-stories`, `psi-chess`, …) that showcases the framework: see [docs/SHOWCASE.md](docs/SHOWCASE.md)
-- [~] Custom stack — scalar ✅ · tensor ✅ · psi-nano ✅ · framework ✅ · **GPU: autotuned matmul + wired into autograd ✅ · fused attention kernel ✅ (both bit-exact) ← perf tuning (quiet machine)** → model zoo
+- [~] Custom stack — scalar ✅ · tensor ✅ · psi-nano ✅ · framework ✅ · **GPU: autotuned Metal matmul — multi-simdgroup MMA at 883 GFLOP/s (34% of M1 peak, bit-exact) · wired into autograd ✅ · fused attention ✅ ← wiring MMA into backend** → model zoo
 - [ ] First trained model + eval against size-matched baselines
 
 ## Build
@@ -88,15 +88,16 @@ text goes from noise to fluent corpus English, e.g._
 
 ```sh
 clang++ -x objective-c++ -fobjc-arc -O2 -std=c++17 src/step3_metal/matmul_metal.mm \
-  -framework Metal -framework Foundation -o matmul_metal && ./matmul_metal
+  -framework Metal -framework Foundation -o matmul_metal && ./matmul_metal 2048   # autotune at size N
 # fused single-dispatch attention, bit-close vs CPU:
 clang++ -x objective-c++ -fobjc-arc -O2 -std=c++17 src/step3_metal/attention_metal.mm \
   -framework Metal -framework Foundation -o attention_metal && ./attention_metal
 ```
 
-_Result (Apple M1, every config bit-exact vs CPU): an **autotuner** sweeps two engines — scalar
-register-tiling and the GPU's `simdgroup_matrix` hardware units — and picks the best (~**420 GFLOP/s**,
-~10× CPU). Two findings only measurement reveals: the "obvious" big 128² tile is the *worst* (starves
-the cores), and a *naive* `simdgroup_matrix` kernel actually *loses* to well-tiled scalar (it lacks
-threadgroup-memory reuse) — exactly why we autotune instead of assume. ~16% of peak; a tiled-MMA kernel
-and fused attention are next. Unified-memory zero-copy._
+_Result (Apple M1, quiet machine, every config bit-exact vs CPU): an **autotuner** sweeps several
+kernels/configs and picks the best. The winner is a **multi-simdgroup tiled-MMA kernel** —
+threadgroup-staged reuse + 4 simdgroups for occupancy + the hardware matrix units — hitting **883
+GFLOP/s at 2048³ (34% of the M1's ~2.6 TFLOP peak, 6× the naive kernel)**, % of peak climbing with size
+as the roofline predicts. The journey is the lesson: three "smarter" kernels lost along the way (the big
+128² tile starves the cores; naive MMA has no reuse; the 1-simdgroup MMA is starved) — only measurement
+found that **reuse + occupancy + matrix units must all be present at once**. Unified-memory zero-copy buffers._
