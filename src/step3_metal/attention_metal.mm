@@ -12,8 +12,10 @@
 #import <Foundation/Foundation.h>
 #import <Metal/Metal.h>
 
+#include <chrono>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <random>
 #include <vector>
 
@@ -43,7 +45,7 @@ kernel void flash_attn(device const float* Q [[buffer(0)]], device const float* 
 }
 )";
 
-int main() {
+int main(int argc, char** argv) {
     @autoreleasepool {
         id<MTLDevice> dev = MTLCreateSystemDefaultDevice();
         if (!dev) { std::printf("no Metal device\n"); return 1; }
@@ -55,7 +57,7 @@ int main() {
         if (!pso) { std::printf("pipeline failed: %s\n", e.localizedDescription.UTF8String); return 1; }
         id<MTLCommandQueue> queue = [dev newCommandQueue];
 
-        const int T = 32, D = 64;                  // psi-nano's attention shape (single head)
+        const int T = (argc > 1) ? std::atoi(argv[1]) : 512, D = 64;   // seq length (single head)
         float scale = 1.0f / std::sqrt((float)D);
         std::mt19937 rng(0);
         std::normal_distribution<float> dist(0, 1);
@@ -69,14 +71,17 @@ int main() {
         id<MTLBuffer> bV = [dev newBufferWithBytes:V.data() length:T*D*4 options:MTLResourceStorageModeShared];
         id<MTLBuffer> bO = [dev newBufferWithLength:T*D*4 options:MTLResourceStorageModeShared];
         uint Tu = T, Du = D;
-        id<MTLCommandBuffer> cb = [queue commandBuffer];
-        id<MTLComputeCommandEncoder> enc = [cb computeCommandEncoder];
-        [enc setComputePipelineState:pso];
-        [enc setBuffer:bQ offset:0 atIndex:0]; [enc setBuffer:bK offset:0 atIndex:1];
-        [enc setBuffer:bV offset:0 atIndex:2]; [enc setBuffer:bO offset:0 atIndex:3];
-        [enc setBytes:&Tu length:4 atIndex:4]; [enc setBytes:&Du length:4 atIndex:5]; [enc setBytes:&scale length:4 atIndex:6];
-        [enc dispatchThreads:MTLSizeMake(T, 1, 1) threadsPerThreadgroup:MTLSizeMake(32, 1, 1)];
-        [enc endEncoding]; [cb commit]; [cb waitUntilCompleted];
+        auto run = [&] {
+            id<MTLCommandBuffer> cb = [queue commandBuffer];
+            id<MTLComputeCommandEncoder> enc = [cb computeCommandEncoder];
+            [enc setComputePipelineState:pso];
+            [enc setBuffer:bQ offset:0 atIndex:0]; [enc setBuffer:bK offset:0 atIndex:1];
+            [enc setBuffer:bV offset:0 atIndex:2]; [enc setBuffer:bO offset:0 atIndex:3];
+            [enc setBytes:&Tu length:4 atIndex:4]; [enc setBytes:&Du length:4 atIndex:5]; [enc setBytes:&scale length:4 atIndex:6];
+            [enc dispatchThreads:MTLSizeMake(T, 1, 1) threadsPerThreadgroup:MTLSizeMake(32, 1, 1)];
+            [enc endEncoding]; [cb commit]; [cb waitUntilCompleted];
+        };
+        run();
         std::memcpy(O.data(), [bO contents], T * D * 4);
 
         // CPU reference: standard causal softmax attention.
@@ -92,6 +97,16 @@ int main() {
         double rel = maxerr / maxref;
         std::printf("fused attention T=%d D=%d: max|diff|=%.2e rel=%.2e (%s)\n",
                     T, D, maxerr, rel, rel < 1e-3 ? "PASS" : "FAIL");
+
+        const int reps = 5, iters = 50;                          // best-of-N timing
+        double bestSec = 1e30;
+        for (int r = 0; r < reps; ++r) {
+            auto t0 = std::chrono::high_resolution_clock::now();
+            for (int it = 0; it < iters; ++it) run();
+            bestSec = std::fmin(bestSec, std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - t0).count());
+        }
+        double flops = 2.0 * (double)T * (T + 1) * D * iters;     // ~ causal QK^T + (·V)
+        std::printf("  throughput: %.1f GFLOP/s\n", flops / bestSec / 1e9);
     }
     return 0;
 }
