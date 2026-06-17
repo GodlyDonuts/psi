@@ -38,7 +38,7 @@ Research-first: landscape sweep → design doc → build.
 - [x] Radicalism map — radical in every layer, unified by capability-per-bit: see [docs/RADICAL.md](docs/RADICAL.md)
 - [x] Quality bar — definition-of-done per component: see [docs/QUALITY.md](docs/QUALITY.md)
 - [x] Target & showcase — a **model zoo** (`psi-stories`, `psi-chess`, …) that showcases the framework: see [docs/SHOWCASE.md](docs/SHOWCASE.md)
-- [~] Custom stack — scalar ✅ · tensor ✅ · psi-nano GPT ✅ · framework-ize ✅ · **GPU kernels: Metal matmul ✅ (124 GFLOP/s, ~4× CPU) ← building** → model zoo
+- [~] Custom stack — scalar ✅ · tensor ✅ · psi-nano GPT ✅ · framework-ize ✅ · **GPU kernels: Metal matmul (tiled, 221 GFLOP/s, bit-exact) ← optimizing toward peak** → model zoo
 - [ ] First trained model + eval against size-matched baselines
 
 ## Build
@@ -88,5 +88,6 @@ clang++ -x objective-c++ -fobjc-arc -O2 -std=c++17 src/step3_metal/matmul_metal.
   -framework Metal -framework Foundation -o matmul_metal && ./matmul_metal
 ```
 
-_Result (Apple M1): correct (`max|diff|=0`) and **124 GFLOP/s** with a naive kernel — ~4× the CPU,
-with ~20× more headroom (tiling / `simdgroup_matrix` next). Uses unified-memory shared buffers (zero copy)._
+_Result (Apple M1, bit-exact vs CPU): naive **151** → threadgroup-tiled **221 GFLOP/s** (~6× the CPU).
+Still only ~8% of the ~2.6 TFLOP peak — the big jumps (register blocking, `simdgroup_matrix` hardware
+units) are next. Uses unified-memory shared buffers (zero copy)._
