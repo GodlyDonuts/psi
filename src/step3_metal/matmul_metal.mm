@@ -133,10 +133,10 @@ kernel void mm(device const float* A [[buffer(0)]], device const float* B [[buff
 )";
 
 // Multi-simdgroup tiled MMA: a threadgroup (4 simdgroups / 128 threads) computes a 32x32 block of C.
-// A/B tiles are staged in threadgroup memory (reuse), and the 4 simdgroups give latency hiding — the
-// two things the naive and 1-simdgroup MMA kernels lacked. Each simdgroup owns a 16x16 sub-block as a
-// 2x2 grid of 8x8 hardware fragments. Assumes M,N % 32 == 0, K % 8 == 0.
-static const char* kSimdMG = R"(
+// A/B tiles (32xBK and BKx32) are staged in threadgroup memory (reuse); 4 simdgroups give occupancy.
+// Each simdgroup owns a 16x16 sub-block as a 2x2 grid of 8x8 hardware fragments. Deeper BK feeds more
+// MMAs per global load (higher arithmetic intensity). BK is set per-config. Assumes M,N%32, K%BK == 0.
+static const char* kSimdMGBody = R"(
 #include <metal_stdlib>
 using namespace metal;
 kernel void mm(device const float* A [[buffer(0)]], device const float* B [[buffer(1)]],
@@ -145,22 +145,24 @@ kernel void mm(device const float* A [[buffer(0)]], device const float* B [[buff
                uint sg [[simdgroup_index_in_threadgroup]],
                uint tid [[thread_index_in_threadgroup]],
                uint2 bid [[threadgroup_position_in_grid]]) {
-    threadgroup float As[32 * 8];
-    threadgroup float Bs[8 * 32];
+    threadgroup float As[32 * BK];
+    threadgroup float Bs[BK * 32];
     uint blockRow = bid.y * 32, blockCol = bid.x * 32;
-    uint sgY = sg / 2, sgX = sg % 2;                 // 2x2 layout of the 4 simdgroups
+    uint sgY = sg / 2, sgX = sg % 2;
     simdgroup_float8x8 acc[2][2];
     for (uint r = 0; r < 2; ++r) for (uint c = 0; c < 2; ++c) acc[r][c] = make_filled_simdgroup_matrix<float,8,8>(0.0f);
 
-    for (uint k0 = 0; k0 < K; k0 += 8) {
-        for (uint i = tid; i < 32 * 8; i += 128) { uint r = i / 8,  c = i % 8;  As[i] = A[(blockRow + r) * K + (k0 + c)]; }
-        for (uint i = tid; i < 8 * 32; i += 128) { uint r = i / 32, c = i % 32; Bs[i] = B[(k0 + r) * N + (blockCol + c)]; }
+    for (uint k0 = 0; k0 < K; k0 += BK) {
+        for (uint i = tid; i < 32 * BK; i += 128) { uint r = i / BK, c = i % BK; As[i] = A[(blockRow + r) * K + (k0 + c)]; }
+        for (uint i = tid; i < BK * 32; i += 128) { uint r = i / 32, c = i % 32; Bs[i] = B[(k0 + r) * N + (blockCol + c)]; }
         threadgroup_barrier(mem_flags::mem_threadgroup);
-        simdgroup_float8x8 af[2], bf[2];
-        for (uint r = 0; r < 2; ++r) simdgroup_load(af[r], As + (sgY * 16 + r * 8) * 8, 8);
-        for (uint c = 0; c < 2; ++c) simdgroup_load(bf[c], Bs + (sgX * 16 + c * 8), 32);
-        for (uint r = 0; r < 2; ++r) for (uint c = 0; c < 2; ++c)
-            simdgroup_multiply_accumulate(acc[r][c], af[r], bf[c], acc[r][c]);
+        for (uint kk = 0; kk < BK; kk += 8) {                    // multiple MMA depths per staged tile
+            simdgroup_float8x8 af[2], bf[2];
+            for (uint r = 0; r < 2; ++r) simdgroup_load(af[r], As + (sgY * 16 + r * 8) * BK + kk, BK);
+            for (uint c = 0; c < 2; ++c) simdgroup_load(bf[c], Bs + kk * 32 + (sgX * 16 + c * 8), 32);
+            for (uint r = 0; r < 2; ++r) for (uint c = 0; c < 2; ++c)
+                simdgroup_multiply_accumulate(acc[r][c], af[r], bf[c], acc[r][c]);
+        }
         threadgroup_barrier(mem_flags::mem_threadgroup);
     }
     for (uint r = 0; r < 2; ++r) for (uint c = 0; c < 2; ++c)
@@ -241,8 +243,8 @@ int main(int argc, char** argv) {
         evaluate("naive", compile(kNaive),
                  MTLSizeMake((N+15)/16,(M+15)/16,1), MTLSizeMake(16,16,1));
 
-        std::vector<Cfg> cfgs = {
-            {64,64,8,4,4}, {64,64,16,4,4}, {128,128,8,8,8}, {128,64,8,8,4}, {64,128,16,4,8}, {128,128,16,8,8}
+        std::vector<Cfg> cfgs = {   // pruned: the always-worst 128^2 configs dropped (lesson logged)
+            {64,64,8,4,4}, {64,64,16,4,4}, {128,64,8,8,4}, {64,128,16,4,8}
         };
         std::string bestLabel; double bestGf = 0;
         for (auto& c : cfgs) {
@@ -267,10 +269,12 @@ int main(int argc, char** argv) {
                                  MTLSizeMake(N/32, M/32, 1), MTLSizeMake(32, 1, 1));
             if (gf > bestGf) { bestGf = gf; bestLabel = "simd-tiled 32x32"; }
         }
-        {   // multi-simdgroup tiled MMA (4 simdgroups/threadgroup: reuse + occupancy + MMA)
-            double gf = evaluate("simd-mg 32x32/4sg", compile(kSimdMG),
+        for (int bk : {8, 16, 32}) {   // multi-simdgroup tiled MMA, swept over k-tile depth
+            char buf[32]; std::snprintf(buf, sizeof(buf), "simd-mg 4sg BK=%d", bk);
+            std::string def = "#define BK " + std::to_string(bk) + "\n";
+            double gf = evaluate(buf, compile(def + kSimdMGBody),
                                  MTLSizeMake(N/32, M/32, 1), MTLSizeMake(128, 1, 1));
-            if (gf > bestGf) { bestGf = gf; bestLabel = "simd-mg 32x32/4sg"; }
+            if (gf > bestGf) { bestGf = gf; bestLabel = buf; }
         }
         std::printf("BEST: %s  @ %.1f GFLOP/s (%.1f%% peak, %.1fx naive)\n",
                     bestLabel.c_str(), bestGf, 100.0 * bestGf / 2600.0, bestGf / 148.0);
