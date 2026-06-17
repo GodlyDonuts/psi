@@ -51,3 +51,4 @@ wandb/
 /mma_autotune
 /ternary_gemm
 /ternary_fp16
+/fused_ternary
