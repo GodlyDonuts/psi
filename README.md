@@ -38,7 +38,7 @@ Research-first: landscape sweep → design doc → build.
 - [x] Radicalism map — radical in every layer, unified by capability-per-bit: see [docs/RADICAL.md](docs/RADICAL.md)
 - [x] Quality bar — definition-of-done per component: see [docs/QUALITY.md](docs/QUALITY.md)
 - [x] Target & showcase — a **model zoo** (`psi-stories`, `psi-chess`, …) that showcases the framework: see [docs/SHOWCASE.md](docs/SHOWCASE.md)
-- [~] Custom stack — scalar ✅ · tensor ✅ · psi-nano ✅ · framework ✅ · **GPU: autotuned Metal matmul + wired into the autograd (fwd+bwd, bit-exact, CPU fallback) ✅ ← fused attention + perf tuning** → model zoo
+- [~] Custom stack — scalar ✅ · tensor ✅ · psi-nano ✅ · framework ✅ · **GPU: autotuned matmul + wired into autograd ✅ · fused attention kernel ✅ (both bit-exact) ← perf tuning (quiet machine)** → model zoo
 - [ ] First trained model + eval against size-matched baselines
 
 ## Build
@@ -89,6 +89,9 @@ text goes from noise to fluent corpus English, e.g._
 ```sh
 clang++ -x objective-c++ -fobjc-arc -O2 -std=c++17 src/step3_metal/matmul_metal.mm \
   -framework Metal -framework Foundation -o matmul_metal && ./matmul_metal
+# fused single-dispatch attention, bit-close vs CPU:
+clang++ -x objective-c++ -fobjc-arc -O2 -std=c++17 src/step3_metal/attention_metal.mm \
+  -framework Metal -framework Foundation -o attention_metal && ./attention_metal
 ```
 
 _Result (Apple M1, every config bit-exact vs CPU): an **autotuner** sweeps two engines — scalar
