@@ -46,3 +46,4 @@ wandb/
 .idea/
 .vscode/
 *.swp
+/shape_bench

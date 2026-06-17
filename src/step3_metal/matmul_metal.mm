@@ -18,6 +18,7 @@
 #include <cstdlib>
 #include <random>
 #include <string>
+#include <thread>
 #include <vector>
 
 // Naive baseline (one thread per output) — reference point for the sweep.
@@ -173,24 +174,38 @@ kernel void mm(device const float* A [[buffer(0)]], device const float* B [[buff
 struct Cfg { int BM, BN, BK, TM, TN; };
 
 int main(int argc, char** argv) {
-    int S = (argc > 1) ? std::atoi(argv[1]) : 512;     // square matmul size (sweep 512/1024/2048)
+    // Args: "matmul_metal M K N"  (rectangular) or "matmul_metal S" (square SxSxS) or none (512).
+    int M = (argc > 1) ? std::atoi(argv[1]) : 512;
+    int K = (argc > 2) ? std::atoi(argv[2]) : M;
+    int N = (argc > 3) ? std::atoi(argv[3]) : M;
     @autoreleasepool {
         id<MTLDevice> dev = MTLCreateSystemDefaultDevice();
         if (!dev) { std::printf("no Metal device\n"); return 1; }
         std::printf("device: %s   (peak ~2.6 TFLOP/s fp32 on M1)\n", dev.name.UTF8String);
         id<MTLCommandQueue> queue = [dev newCommandQueue];
 
-        const int M = S, K = S, N = S;
         std::mt19937 rng(0);
         std::normal_distribution<float> dist(0, 1);
         std::vector<float> A(M * K), B(K * N), Cref(M * N);
         for (auto& x : A) x = dist(rng);
         for (auto& x : B) x = dist(rng);
-        for (int i = 0; i < M; ++i)
-            for (int j = 0; j < N; ++j) {
-                float acc = 0; for (int k = 0; k < K; ++k) acc += A[i * K + k] * B[k * N + j];
-                Cref[i * N + j] = acc;
+        {   // parallel CPU reference (rows split across cores — fat-M shapes have 8192 rows)
+            unsigned nthreads = std::max(1u, std::thread::hardware_concurrency());
+            std::vector<std::thread> pool;
+            auto rows = [&](int r0, int r1) {
+                for (int i = r0; i < r1; ++i)
+                    for (int j = 0; j < N; ++j) {
+                        float acc = 0; for (int k = 0; k < K; ++k) acc += A[i * K + k] * B[k * N + j];
+                        Cref[i * N + j] = acc;
+                    }
+            };
+            int chunk = (M + nthreads - 1) / nthreads;
+            for (unsigned t = 0; t < nthreads; ++t) {
+                int r0 = t * chunk, r1 = std::min(M, r0 + chunk);
+                if (r0 < r1) pool.emplace_back(rows, r0, r1);
             }
+            for (auto& th : pool) th.join();
+        }
         double maxref = 0; for (float v : Cref) maxref = std::fmax(maxref, std::fabs(v));
 
         id<MTLBuffer> bA = [dev newBufferWithBytes:A.data() length:A.size()*4 options:MTLResourceStorageModeShared];
