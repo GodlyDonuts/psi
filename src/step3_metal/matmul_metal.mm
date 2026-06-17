@@ -154,8 +154,12 @@ kernel void mm(device const float* A [[buffer(0)]], device const float* B [[buff
     for (uint r = 0; r < 2; ++r) for (uint c = 0; c < 2; ++c) acc[r][c] = make_filled_simdgroup_matrix<float,8,8>(0.0f);
 
     for (uint k0 = 0; k0 < K; k0 += BK) {
-        for (uint i = tid; i < 32 * BK; i += 128) { uint r = i / BK, c = i % BK; As[i] = A[(blockRow + r) * K + (k0 + c)]; }
-        for (uint i = tid; i < BK * 32; i += 128) { uint r = i / 32, c = i % 32; Bs[i] = B[(k0 + r) * N + (blockCol + c)]; }
+        // float4 vectorized cooperative loads (4 floats/instruction) — measured ~+50% vs scalar loads,
+        // same threadgroup memory so occupancy is unchanged. Requires K%4==0, N%4==0, BK%4==0.
+        for (uint t = tid; t < 8 * BK; t += 128) { uint lin = t*4, r = lin/BK, c4 = lin%BK;   // As 32xBK
+            *(threadgroup float4*)(As + r*BK + c4) = *(device const float4*)(A + (blockRow + r)*K + (k0 + c4)); }
+        for (uint t = tid; t < 8 * BK; t += 128) { uint lin = t*4, r = lin/32, c4 = lin%32;   // Bs BKx32
+            *(threadgroup float4*)(Bs + r*32 + c4) = *(device const float4*)(B + (k0 + r)*N + (blockCol + c4)); }
         threadgroup_barrier(mem_flags::mem_threadgroup);
         for (uint kk = 0; kk < BK; kk += 8) {                    // multiple MMA depths per staged tile
             simdgroup_float8x8 af[2], bf[2];

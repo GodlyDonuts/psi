@@ -47,3 +47,4 @@ wandb/
 .vscode/
 *.swp
 /shape_bench
+/db_dev
