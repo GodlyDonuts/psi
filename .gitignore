@@ -17,6 +17,13 @@ venv/
 build/
 dist/
 cmake-build-*/
+# compiled demo executables (built into the repo root by the README one-liners)
+/step0
+/step1
+/step2_gradcheck
+/psi_nano
+/matmul_bench
+/psi_profile
 
 # ML artifacts — never commit weights, datasets, or logs
 *.bin
