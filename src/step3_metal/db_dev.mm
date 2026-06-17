@@ -1,13 +1,16 @@
 // db_dev.mm — kernel-design dev harness for the multi-simdgroup MMA matmul. Compares variants
 // head-to-head, all validated bit-exact vs a parallel CPU ref, timed best-of-N across the shapes
-// the model actually runs. Goal: close the ~2x gap to MLX/PyTorch (which hit ~57% of M1 peak).
+// the model actually runs. Goal: MATCH OR BEAT MLX/PyTorch (which hit ~55-74% of M1 peak) on the
+// real transformer shapes.
 //
 // Findings log (measured on Apple M1, this harness):
-//  - DOUBLE-BUFFERING refuted: 0.69-0.85x (SLOWER). Doubling threadgroup mem halves per-core
-//    threadgroup residency; on Apple GPUs that occupancy IS the latency-hiding, so manual pipelining
-//    loses. => kernel is occupancy / memory-throughput bound, not barrier-bound.
-//  - Next levers (don't cost occupancy): float4 vectorized loads; higher arithmetic intensity via a
-//    64x64 block (each simdgroup computes a 4x4 grid of 8x8 MMA frags -> more reuse per staged tile).
+//  - float4 vectorized loads: BIG WIN (~+50%), bit-exact. Real shapes ~28-30% -> 40-46% peak. BANKED.
+//  - DOUBLE-BUFFERING refuted: 0.69-0.85x. Doubling threadgroup mem halves per-core residency; on
+//    Apple GPUs that occupancy IS the latency-hiding, so manual pipelining loses. => occupancy is king.
+//  - big64 acc[4][4] (16 frags): catastrophic spill (2.4%). Register pressure kills occupancy.
+//  - moderate tiles 32x64/64x32 (8 frags + f4): shape-dependent (32x32 best on real shapes).
+//  This round: BK re-sweep WITH float4 (old BK=16 tuned for scalar loads), + no-staging "direct" kernel
+//  (simdgroup_load fragments straight from device memory -> zero threadgroup mem -> max occupancy).
 //
 // Build: clang++ -x objective-c++ -fobjc-arc -O2 -std=c++17 db_dev.mm \
 //                -framework Metal -framework Foundation -o db_dev && ./db_dev
@@ -22,11 +25,10 @@
 #include <thread>
 #include <vector>
 
-// ---- baseline: single-buffer, 32x32 block, 4 simdgroups, acc[2][2], scalar loads (autotuner winner)
-static const char* kBase = R"(
+// f4 32x32 / 4 simdgroups / acc[2][2] / float4 loads — BK injected via #define prefix.
+static const char* kF4Body = R"(
 #include <metal_stdlib>
 using namespace metal;
-#define BK 16
 kernel void mm(device const float* A [[buffer(0)]], device const float* B [[buffer(1)]],
                device float* C [[buffer(2)]], constant uint& M [[buffer(3)]],
                constant uint& K [[buffer(4)]], constant uint& N [[buffer(5)]],
@@ -37,8 +39,10 @@ kernel void mm(device const float* A [[buffer(0)]], device const float* B [[buff
     simdgroup_float8x8 acc[2][2];
     for (uint r=0;r<2;++r) for (uint c=0;c<2;++c) acc[r][c]=make_filled_simdgroup_matrix<float,8,8>(0.0f);
     for (uint k0 = 0; k0 < K; k0 += BK) {
-        for (uint i=tid;i<32*BK;i+=128){ uint r=i/BK,c=i%BK; As[i]=A[(blockRow+r)*K+(k0+c)]; }
-        for (uint i=tid;i<BK*32;i+=128){ uint r=i/32,c=i%32; Bs[i]=B[(k0+r)*N+(blockCol+c)]; }
+        for (uint t=tid;t<8*BK;t+=128){ uint lin=t*4, r=lin/BK, c4=lin%BK;
+            *(threadgroup float4*)(As+r*BK+c4) = *(device const float4*)(A+(blockRow+r)*K+(k0+c4)); }
+        for (uint t=tid;t<8*BK;t+=128){ uint lin=t*4, r=lin/32, c4=lin%32;
+            *(threadgroup float4*)(Bs+r*32+c4) = *(device const float4*)(B+(k0+r)*N+(blockCol+c4)); }
         threadgroup_barrier(mem_flags::mem_threadgroup);
         for (uint kk=0;kk<BK;kk+=8){
             simdgroup_float8x8 af[2], bf[2];
@@ -53,107 +57,33 @@ kernel void mm(device const float* A [[buffer(0)]], device const float* B [[buff
 }
 )";
 
-// ---- f4: baseline + float4 vectorized loads (same block/occupancy, fewer/wider load instructions) ----
-static const char* kF4 = R"(
+// direct: NO threadgroup staging. Each simdgroup loads its A/B 8x8 fragments straight from device
+// memory and MMAs. Zero threadgroup mem -> maximum per-core threadgroup residency (occupancy). Reuse
+// comes only from the device cache + the 2x2 register-blocked acc. Tests "occupancy beats staging".
+static const char* kDirect = R"(
 #include <metal_stdlib>
 using namespace metal;
-#define BK 16
 kernel void mm(device const float* A [[buffer(0)]], device const float* B [[buffer(1)]],
                device float* C [[buffer(2)]], constant uint& M [[buffer(3)]],
                constant uint& K [[buffer(4)]], constant uint& N [[buffer(5)]],
-               uint sg [[simdgroup_index_in_threadgroup]], uint tid [[thread_index_in_threadgroup]],
+               uint sg [[simdgroup_index_in_threadgroup]],
                uint2 bid [[threadgroup_position_in_grid]]) {
-    threadgroup float As[32 * BK]; threadgroup float Bs[BK * 32];
     uint blockRow = bid.y * 32, blockCol = bid.x * 32, sgY = sg / 2, sgX = sg % 2;
+    uint row = blockRow + sgY * 16, col = blockCol + sgX * 16;
     simdgroup_float8x8 acc[2][2];
     for (uint r=0;r<2;++r) for (uint c=0;c<2;++c) acc[r][c]=make_filled_simdgroup_matrix<float,8,8>(0.0f);
-    for (uint k0 = 0; k0 < K; k0 += BK) {
-        { uint r=tid/4, c4=(tid%4)*4;   // As 32x16 = 128 float4, one per thread
-          *(threadgroup float4*)(As+r*BK+c4) = *(device const float4*)(A+(blockRow+r)*K+k0+c4); }
-        { uint r=tid/8, c4=(tid%8)*4;   // Bs 16x32 = 128 float4, one per thread
-          *(threadgroup float4*)(Bs+r*32+c4) = *(device const float4*)(B+(k0+r)*N+blockCol+c4); }
-        threadgroup_barrier(mem_flags::mem_threadgroup);
-        for (uint kk=0;kk<BK;kk+=8){
-            simdgroup_float8x8 af[2], bf[2];
-            for (uint r=0;r<2;++r) simdgroup_load(af[r], As+(sgY*16+r*8)*BK+kk, BK);
-            for (uint c=0;c<2;++c) simdgroup_load(bf[c], Bs+kk*32+(sgX*16+c*8), 32);
-            for (uint r=0;r<2;++r) for (uint c=0;c<2;++c) simdgroup_multiply_accumulate(acc[r][c],af[r],bf[c],acc[r][c]);
-        }
-        threadgroup_barrier(mem_flags::mem_threadgroup);
+    for (uint k = 0; k < K; k += 8) {
+        simdgroup_float8x8 af[2], bf[2];
+        for (uint r=0;r<2;++r) simdgroup_load(af[r], A + (row + r*8)*K + k, K);
+        for (uint c=0;c<2;++c) simdgroup_load(bf[c], B + k*N + (col + c*8), N);
+        for (uint r=0;r<2;++r) for (uint c=0;c<2;++c) simdgroup_multiply_accumulate(acc[r][c],af[r],bf[c],acc[r][c]);
     }
     for (uint r=0;r<2;++r) for (uint c=0;c<2;++c)
-        simdgroup_store(acc[r][c], C+(blockRow+sgY*16+r*8)*N+(blockCol+sgX*16+c*8), N);
+        simdgroup_store(acc[r][c], C + (row + r*8)*N + (col + c*8), N);
 }
 )";
 
-// ---- f4_3264: 32x64 block, 4 simdgroups (2x2), each owns 16x32 = acc[2][4] (8 frags), float4 loads.
-//      Bs staged tile is 2x wider -> reused across 4 column-frags. 8 frags should fit registers. ----
-static const char* k3264 = R"(
-#include <metal_stdlib>
-using namespace metal;
-#define BK 16
-kernel void mm(device const float* A [[buffer(0)]], device const float* B [[buffer(1)]],
-               device float* C [[buffer(2)]], constant uint& M [[buffer(3)]],
-               constant uint& K [[buffer(4)]], constant uint& N [[buffer(5)]],
-               uint sg [[simdgroup_index_in_threadgroup]], uint tid [[thread_index_in_threadgroup]],
-               uint2 bid [[threadgroup_position_in_grid]]) {
-    threadgroup float As[32 * BK]; threadgroup float Bs[BK * 64];
-    uint blockRow = bid.y * 32, blockCol = bid.x * 64, sgY = sg / 2, sgX = sg % 2;
-    simdgroup_float8x8 acc[2][4];
-    for (uint r=0;r<2;++r) for (uint c=0;c<4;++c) acc[r][c]=make_filled_simdgroup_matrix<float,8,8>(0.0f);
-    for (uint k0 = 0; k0 < K; k0 += BK) {
-        { uint r=tid/4, c4=(tid%4)*4;                              // As 32x16 = 128 float4
-          *(threadgroup float4*)(As+r*BK+c4) = *(device const float4*)(A+(blockRow+r)*K+k0+c4); }
-        for (uint t=tid;t<256;t+=128){ uint r=t/16, c4=(t%16)*4;   // Bs 16x64 = 256 float4
-          *(threadgroup float4*)(Bs+r*64+c4) = *(device const float4*)(B+(k0+r)*N+blockCol+c4); }
-        threadgroup_barrier(mem_flags::mem_threadgroup);
-        for (uint kk=0;kk<BK;kk+=8){
-            simdgroup_float8x8 af[2], bf[4];
-            for (uint r=0;r<2;++r) simdgroup_load(af[r], As+(sgY*16+r*8)*BK+kk, BK);
-            for (uint c=0;c<4;++c) simdgroup_load(bf[c], Bs+kk*64+(sgX*32+c*8), 64);
-            for (uint r=0;r<2;++r) for (uint c=0;c<4;++c) simdgroup_multiply_accumulate(acc[r][c],af[r],bf[c],acc[r][c]);
-        }
-        threadgroup_barrier(mem_flags::mem_threadgroup);
-    }
-    for (uint r=0;r<2;++r) for (uint c=0;c<4;++c)
-        simdgroup_store(acc[r][c], C+(blockRow+sgY*16+r*8)*N+(blockCol+sgX*32+c*8), N);
-}
-)";
-
-// ---- f4_6432: 64x32 block, 4 simdgroups (2x2), each owns 32x16 = acc[4][2] (8 frags), float4 loads. ----
-static const char* k6432 = R"(
-#include <metal_stdlib>
-using namespace metal;
-#define BK 16
-kernel void mm(device const float* A [[buffer(0)]], device const float* B [[buffer(1)]],
-               device float* C [[buffer(2)]], constant uint& M [[buffer(3)]],
-               constant uint& K [[buffer(4)]], constant uint& N [[buffer(5)]],
-               uint sg [[simdgroup_index_in_threadgroup]], uint tid [[thread_index_in_threadgroup]],
-               uint2 bid [[threadgroup_position_in_grid]]) {
-    threadgroup float As[64 * BK]; threadgroup float Bs[BK * 32];
-    uint blockRow = bid.y * 64, blockCol = bid.x * 32, sgY = sg / 2, sgX = sg % 2;
-    simdgroup_float8x8 acc[4][2];
-    for (uint r=0;r<4;++r) for (uint c=0;c<2;++c) acc[r][c]=make_filled_simdgroup_matrix<float,8,8>(0.0f);
-    for (uint k0 = 0; k0 < K; k0 += BK) {
-        for (uint t=tid;t<256;t+=128){ uint r=t/4, c4=(t%4)*4;     // As 64x16 = 256 float4
-          *(threadgroup float4*)(As+r*BK+c4) = *(device const float4*)(A+(blockRow+r)*K+k0+c4); }
-        { uint r=tid/8, c4=(tid%8)*4;                              // Bs 16x32 = 128 float4
-          *(threadgroup float4*)(Bs+r*32+c4) = *(device const float4*)(B+(k0+r)*N+blockCol+c4); }
-        threadgroup_barrier(mem_flags::mem_threadgroup);
-        for (uint kk=0;kk<BK;kk+=8){
-            simdgroup_float8x8 af[4], bf[2];
-            for (uint r=0;r<4;++r) simdgroup_load(af[r], As+(sgY*32+r*8)*BK+kk, BK);
-            for (uint c=0;c<2;++c) simdgroup_load(bf[c], Bs+kk*32+(sgX*16+c*8), 32);
-            for (uint r=0;r<4;++r) for (uint c=0;c<2;++c) simdgroup_multiply_accumulate(acc[r][c],af[r],bf[c],acc[r][c]);
-        }
-        threadgroup_barrier(mem_flags::mem_threadgroup);
-    }
-    for (uint r=0;r<4;++r) for (uint c=0;c<2;++c)
-        simdgroup_store(acc[r][c], C+(blockRow+sgY*32+r*8)*N+(blockCol+sgX*16+c*8), N);
-}
-)";
-
-struct Kern { const char* name; const char* src; int bM; int bN; id<MTLComputePipelineState> pso; };
+struct Kern { std::string name; std::string src; int bM; int bN; id<MTLComputePipelineState> pso; };
 struct Shape { int M, K, N; const char* name; };
 
 int main() {
@@ -162,16 +92,18 @@ int main() {
         if (!dev) { std::printf("no Metal device\n"); return 1; }
         std::printf("device: %s   (peak ~2.6 TFLOP/s fp32)\n", dev.name.UTF8String);
         id<MTLCommandQueue> queue = [dev newCommandQueue];
-        auto compile = [&](const char* src) -> id<MTLComputePipelineState> {
+        auto compile = [&](const std::string& src) -> id<MTLComputePipelineState> {
             NSError* e = nil;
-            id<MTLLibrary> lib = [dev newLibraryWithSource:@(src) options:nil error:&e];
+            id<MTLLibrary> lib = [dev newLibraryWithSource:@(src.c_str()) options:nil error:&e];
             if (!lib) { std::printf("compile: %s\n", e.localizedDescription.UTF8String); return nil; }
             id<MTLComputePipelineState> p = [dev newComputePipelineStateWithFunction:[lib newFunctionWithName:@"mm"] error:&e];
             if (!p) std::printf("pipeline: %s\n", e.localizedDescription.UTF8String);
             return p;
         };
-        Kern kerns[] = { {"base32", kBase, 32, 32, nil}, {"f4_32x32", kF4, 32, 32, nil},
-                         {"f4_32x64", k3264, 32, 64, nil}, {"f4_64x32", k6432, 64, 32, nil} };
+        std::vector<Kern> kerns;
+        for (int bk : {8, 16, 32}) kerns.push_back({"f4_bk" + std::to_string(bk),
+            "#define BK " + std::to_string(bk) + "\n" + kF4Body, 32, 32, nil});
+        kerns.push_back({"direct", kDirect, 32, 32, nil});
         for (auto& k : kerns) { k.pso = compile(k.src); if (!k.pso) return 1; }
 
         Shape shapes[] = {
@@ -209,7 +141,7 @@ int main() {
                     for(int it=0;it<iters;++it) run();
                     best=std::fmin(best,std::chrono::duration<double>(std::chrono::high_resolution_clock::now()-t0).count()); }
                 double gf=2.0*M*K*N*iters/best/1e9;
-                std::printf("  %-10s %s  %7.1f GFLOP/s  (%4.1f%% peak)\n", k.name, rel<1e-3?"OK":"XX", gf, 100*gf/2600.0);
+                std::printf("  %-10s %s  %7.1f GFLOP/s  (%4.1f%% peak)\n", k.name.c_str(), rel<1e-3?"OK":"XX", gf, 100*gf/2600.0);
             }
         }
     }

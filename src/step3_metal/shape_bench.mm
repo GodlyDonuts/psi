@@ -18,42 +18,49 @@
 #include <thread>
 #include <vector>
 
-// Multi-simdgroup tiled MMA (the autotuner winner). 4 simdgroups/128 threads compute a 32x32 block;
-// A/B tiles staged in threadgroup memory for reuse; each simdgroup owns a 2x2 grid of 8x8 MMA frags.
-// BK=16 baked in. Requires M%32==0, N%32==0, K%16==0 (all our shapes qualify).
+// Champion config from the mma_autotune.mm design-space search (block/simdgroup-grid/BK/padding,
+// all bit-exact). A 64x64 output block per threadgroup, 8 simdgroups (256 threads) in a 4x2 grid;
+// each simdgroup owns a 16x32 sub-tile = FM(2) x FN(4) of 8x8 MMA fragments. A/B staged with float4
+// loads. KEY: the staging rows are PADDED (AW=BK+4, BW=BN+4) so successive rows land on different
+// threadgroup-memory banks -- killing the simdgroup_load bank conflicts that were throttling the MMAs
+// (~+12% on top of float4). Requires M%64==0, N%64==0, K%16==0 (all our shapes qualify).
 static const char* kSrc = R"(
 #include <metal_stdlib>
 using namespace metal;
 #define BK 16
+#define PAD 4
+#define AW (BK + PAD)
+#define BW (64 + PAD)
 kernel void mm(device const float* A [[buffer(0)]], device const float* B [[buffer(1)]],
                device float* C [[buffer(2)]], constant uint& M [[buffer(3)]],
                constant uint& K [[buffer(4)]], constant uint& N [[buffer(5)]],
                uint sg [[simdgroup_index_in_threadgroup]],
                uint tid [[thread_index_in_threadgroup]],
                uint2 bid [[threadgroup_position_in_grid]]) {
-    threadgroup float As[32 * BK];
-    threadgroup float Bs[BK * 32];
-    uint blockRow = bid.y * 32, blockCol = bid.x * 32;
-    uint sgY = sg / 2, sgX = sg % 2;
-    simdgroup_float8x8 acc[2][2];
-    for (uint r = 0; r < 2; ++r) for (uint c = 0; c < 2; ++c) acc[r][c] = make_filled_simdgroup_matrix<float,8,8>(0.0f);
+    threadgroup float As[64 * AW];     // 64 rows x BK, padded stride AW
+    threadgroup float Bs[BK * BW];     // BK rows x 64, padded stride BW
+    uint blockRow = bid.y * 64, blockCol = bid.x * 64;
+    uint sgY = sg / 2, sgX = sg % 2;                       // 4x2 simdgroup grid
+    uint rowBase = sgY * 16, colBase = sgX * 32;           // this simdgroup's 16x32 sub-tile
+    simdgroup_float8x8 acc[2][4];
+    for (uint r = 0; r < 2; ++r) for (uint c = 0; c < 4; ++c) acc[r][c] = make_filled_simdgroup_matrix<float,8,8>(0.0f);
     for (uint k0 = 0; k0 < K; k0 += BK) {
-        for (uint t = tid; t < 8 * BK; t += 128) { uint lin = t*4, r = lin/BK, c4 = lin%BK;   // float4 loads
-            *(threadgroup float4*)(As + r*BK + c4) = *(device const float4*)(A + (blockRow + r)*K + (k0 + c4)); }
-        for (uint t = tid; t < 8 * BK; t += 128) { uint lin = t*4, r = lin/32, c4 = lin%32;
-            *(threadgroup float4*)(Bs + r*32 + c4) = *(device const float4*)(B + (k0 + r)*N + (blockCol + c4)); }
+        for (uint t = tid; t < (64*BK)/4; t += 256) { uint lin = t*4, r = lin/BK, c4 = lin%BK;   // As float4
+            *(threadgroup float4*)(As + r*AW + c4) = *(device const float4*)(A + (blockRow + r)*K + (k0 + c4)); }
+        for (uint t = tid; t < (BK*64)/4; t += 256) { uint lin = t*4, r = lin/64, c4 = lin%64;   // Bs float4
+            *(threadgroup float4*)(Bs + r*BW + c4) = *(device const float4*)(B + (k0 + r)*N + (blockCol + c4)); }
         threadgroup_barrier(mem_flags::mem_threadgroup);
         for (uint kk = 0; kk < BK; kk += 8) {
-            simdgroup_float8x8 af[2], bf[2];
-            for (uint r = 0; r < 2; ++r) simdgroup_load(af[r], As + (sgY * 16 + r * 8) * BK + kk, BK);
-            for (uint c = 0; c < 2; ++c) simdgroup_load(bf[c], Bs + kk * 32 + (sgX * 16 + c * 8), 32);
-            for (uint r = 0; r < 2; ++r) for (uint c = 0; c < 2; ++c)
+            simdgroup_float8x8 af[2], bf[4];
+            for (uint r = 0; r < 2; ++r) simdgroup_load(af[r], As + (rowBase + r*8)*AW + kk, AW);
+            for (uint c = 0; c < 4; ++c) simdgroup_load(bf[c], Bs + kk*BW + (colBase + c*8), BW);
+            for (uint r = 0; r < 2; ++r) for (uint c = 0; c < 4; ++c)
                 simdgroup_multiply_accumulate(acc[r][c], af[r], bf[c], acc[r][c]);
         }
         threadgroup_barrier(mem_flags::mem_threadgroup);
     }
-    for (uint r = 0; r < 2; ++r) for (uint c = 0; c < 2; ++c)
-        simdgroup_store(acc[r][c], C + (blockRow + sgY * 16 + r * 8) * N + (blockCol + sgX * 16 + c * 8), N);
+    for (uint r = 0; r < 2; ++r) for (uint c = 0; c < 4; ++c)
+        simdgroup_store(acc[r][c], C + (blockRow + rowBase + r*8)*N + (blockCol + colBase + c*8), N);
 }
 )";
 
@@ -107,7 +114,7 @@ int main() {
             id<MTLBuffer> bB=[dev newBufferWithBytes:B.data() length:B.size()*4 options:MTLResourceStorageModeShared];
             id<MTLBuffer> bC=[dev newBufferWithLength:M*N*4 options:MTLResourceStorageModeShared];
             uint Mu=M,Ku=K,Nu=N;
-            MTLSize grid=MTLSizeMake(N/32, M/32, 1), tg=MTLSizeMake(128,1,1);
+            MTLSize grid=MTLSizeMake(N/64, M/64, 1), tg=MTLSizeMake(256,1,1);   // 64x64 block, 8 simdgroups
             auto run=[&]{
                 id<MTLCommandBuffer> cb=[queue commandBuffer];
                 id<MTLComputeCommandEncoder> enc=[cb computeCommandEncoder];

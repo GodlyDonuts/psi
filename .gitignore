@@ -48,3 +48,4 @@ wandb/
 *.swp
 /shape_bench
 /db_dev
+/mma_autotune
