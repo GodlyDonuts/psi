@@ -50,3 +50,4 @@ wandb/
 /db_dev
 /mma_autotune
 /ternary_gemm
+/ternary_fp16
