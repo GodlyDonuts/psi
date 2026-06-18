@@ -36,7 +36,9 @@ struct Dataset {
 };
 
 // Mean cross-entropy over strided windows of `data` (no backward — pure evaluation).
-inline double eval_loss(GPT& model, const std::vector<int>& data, int block, int max_windows = 64) {
+// Templated on the model type so both GPT (psi-nano) and ModernGPT (psi-stories) use it.
+template <class M>
+inline double eval_loss(M& model, const std::vector<int>& data, int block, int max_windows = 64) {
     int n = (int)data.size();
     if (n < block + 2) return 0.0;
     double total = 0;

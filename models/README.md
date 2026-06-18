@@ -23,14 +23,16 @@ The data is shared and documented in [data/README.md](../data/README.md). The wh
 Grades are 1–10 per the [rubric](../docs/EVAL.md); a model "clears the bar" at roughly ≥7 on Grammar,
 Coherence, and Consistency. The **smallest row that passes is the result.**
 
+All variations use the **full modern stack**: small-BPE · multi-head + **GQA** · **RoPE** · **SwiGLU** ·
+**block-wise weight-sharing** (deep-and-thin) · tied embeddings · **WSD** schedule (see [RESEARCH.md](../docs/RESEARCH.md)).
+
 | model | params | bits/wt | size | Gram | Coh | Cons | Plot | clears bar? |
 |---|---|---|---|---|---|---|---|---|
-| flagship_965k | ~965K | 32 (fp32) | ~3.9 MB | — | — | — | — | _pending overnight run_ |
-| ablate_1head  | ~965K | 32 | ~3.9 MB | — | — | — | — | _ablation: multi-head off_ |
-| mid_600k      | ~600K | 32 | ~2.4 MB | — | — | — | — | _pending_ |
-| small_450k    | ~450K | 32 | ~1.8 MB | — | — | — | — | _pending_ |
-| tiny_250k     | ~250K | 32 | ~1.0 MB | — | — | — | — | _pending_ |
-| nano_150k     | ~150K | 32 | ~0.6 MB | — | — | — | — | _pending_ |
+| flagship_900k | ~918K | 32 (fp32) | ~3.7 MB | — | — | — | — | _pending overnight run_ |
+| mid_570k      | ~574K | 32 | ~2.3 MB | — | — | — | — | _pending_ |
+| small_350k    | ~354K | 32 | ~1.4 MB | — | — | — | — | _pending_ |
+| tiny_215k     | ~215K | 32 | ~0.9 MB | — | — | — | — | _pending_ |
+| nano_130k     | ~131K | 32 | ~0.5 MB | — | — | — | — | _how low can it still tell a story?_ |
 
 _Next after the fp32 frontier is found: re-train the smallest passing config with **ternary (~1.58-bit)**
 weights → the same capability at ~16× fewer bits (e.g. a passing 400K model → ~0.08 MB)._

@@ -90,5 +90,9 @@ int main() {
       Scalarizer s({3,4}, rng);
       check("silu",        {A}, [&]{ return s(silu(A)); }); }
 
+    { Tensor A = Tensor::randn({5,8}, rng, 1);   // [T=5, dh=8], RoPE rotates dim-pairs by position
+      Scalarizer s({5,8}, rng);
+      check("rope",        {A}, [&]{ return s(rope(A)); }); }
+
     return 0;
 }

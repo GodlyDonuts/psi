@@ -17,7 +17,9 @@ namespace psi {
 
 struct Config {
     int vocab, d_model, n_layers, block, hidden;
-    int n_heads = 1;   // multi-head attention; 1 reproduces the original single-head psi-nano exactly
+    int n_heads = 1;     // multi-head attention; 1 reproduces the original single-head psi-nano exactly
+    int n_kv_heads = 0;  // GQA: # key/value heads (0 ⇒ = n_heads, plain MHA). [ModernGPT only]
+    int n_unique = 0;    // block-wise weight sharing: # unique blocks cycled over n_layers (0 ⇒ no sharing)
 };
 
 struct Block {

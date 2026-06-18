@@ -23,38 +23,52 @@
 
 #include "bpe.hpp"
 #include "data.hpp"
-#include "model.hpp"
+#include "model_stories.hpp"   // ModernGPT: GQA + RoPE + SwiGLU + block-weight-sharing
 
 using namespace psi;
 
 static const char* MODEL_PATH = "psi_stories.bin";
 
-// --- BPE-aware checkpoint: magic, Config, the tokenizer (base+merges), then params in order. ---
-static void save_stories(const std::string& path, GPT& model, const BPETokenizer& tok) {
+// --- BPE-aware checkpoint: magic, Config (8 ints), the tokenizer (base+merges), then params in order. ---
+static void save_stories(const std::string& path, ModernGPT& model, const BPETokenizer& tok) {
     std::ofstream f(path, std::ios::binary);
     f.write("PSST", 4);
-    int cfg[6] = {model.cfg.vocab, model.cfg.d_model, model.cfg.n_layers, model.cfg.block, model.cfg.hidden, model.cfg.n_heads};
+    auto& c = model.cfg;
+    int cfg[8] = {c.vocab, c.d_model, c.n_layers, c.block, c.hidden, c.n_heads, c.n_kv_heads, c.n_unique};
     f.write(reinterpret_cast<char*>(cfg), sizeof(cfg));
     tok.save(f);
     for (auto& p : model.params()) { auto& d = p.data(); f.write(reinterpret_cast<char*>(d.data()), (std::streamsize)(d.size() * sizeof(real))); }
 }
-static GPT load_stories(const std::string& path, BPETokenizer& tok, std::mt19937& rng) {
+static ModernGPT load_stories(const std::string& path, BPETokenizer& tok, std::mt19937& rng) {
     std::ifstream f(path, std::ios::binary);
     if (!f) throw std::runtime_error("cannot open " + path);
     char magic[4]; f.read(magic, 4);
     if (std::string(magic, 4) != "PSST") throw std::runtime_error("bad magic in " + path);
-    int cfg[6]; f.read(reinterpret_cast<char*>(cfg), sizeof(cfg));
-    Config c{cfg[0], cfg[1], cfg[2], cfg[3], cfg[4], cfg[5]};
+    int cfg[8]; f.read(reinterpret_cast<char*>(cfg), sizeof(cfg));
+    Config c{cfg[0], cfg[1], cfg[2], cfg[3], cfg[4], cfg[5], cfg[6], cfg[7]};
     tok.load(f);
-    GPT model(c, rng);
+    ModernGPT model(c, rng);
     for (auto& p : model.params()) { auto& d = p.data(); f.read(reinterpret_cast<char*>(d.data()), (std::streamsize)(d.size() * sizeof(real))); }
     return model;
 }
 
-static int cmd_train(const std::string& datafile, int steps, int vocab, int d, int layers, int block, int hidden, int heads) {
+// Warmup-Stable-Decay LR schedule (MiniCPM): linear warmup -> constant -> linear decay to 0.1·lr in
+// the last 20%. Better than flat/cosine for SLMs and enables stable-phase checkpoint reuse.
+static real wsd_lr(int step, int steps, real lr) {
+    int warm = std::max(50, steps / 33);          // ~3% warmup
+    int decay_start = (steps * 4) / 5;            // last 20% decays
+    if (step < warm) return lr * (real)step / warm;
+    if (step < decay_start) return lr;
+    real frac = (real)(steps - step) / std::max(1, steps - decay_start);   // 1 -> 0
+    return lr * (0.1 + 0.9 * frac);               // decay to 0.1·lr
+}
+
+static int cmd_train(const std::string& datafile, int steps, int vocab, int d, int layers,
+                     int block, int hidden, int heads, int nkv, int nuniq) {
     std::string text = read_file(datafile);
     if (text.empty()) { std::fprintf(stderr, "error: empty/unreadable data (%s)\n", datafile.c_str()); return 1; }
     if (d % heads != 0) { std::fprintf(stderr, "error: d_model %d not divisible by n_heads %d\n", d, heads); return 1; }
+    if (nkv > 0 && heads % nkv != 0) { std::fprintf(stderr, "error: n_heads %d not divisible by n_kv %d\n", heads, nkv); return 1; }
 
     std::printf("fitting BPE (vocab=%d) ...\n", vocab); std::fflush(stdout);
     BPETokenizer tok;
@@ -62,17 +76,18 @@ static int cmd_train(const std::string& datafile, int steps, int vocab, int d, i
     std::vector<int> ids = tok.encode(text);
     Dataset ds(ids, 0.1);
 
-    Config cfg{tok.vocab(), d, layers, block, hidden, heads};
+    Config cfg{tok.vocab(), d, layers, block, hidden, heads, nkv, nuniq};
     std::mt19937 rng(1234);
-    GPT model(cfg, rng);
+    ModernGPT model(cfg, rng);
     AdamW opt(model.params());
     const int batch = 8;
     const real lr = 1e-3;
 
     int nparams = 0; for (auto& p : model.params()) nparams += p.numel();
-    std::printf("psi-stories | vocab=%d d=%d layers=%d heads=%d block=%d hidden=%d  tokens=%zu (%.2f c/tok)  train=%zu val=%zu  params=%d\n",
-                tok.vocab(), d, layers, heads, block, hidden, ids.size(), (double)text.size() / ids.size(),
-                ds.train.size(), ds.val.size(), nparams);
+    std::printf("psi-stories | vocab=%d d=%d layers=%d(uniq=%d) heads=%d/kv%d ctx=%d hid=%d(SwiGLU) RoPE  "
+                "tokens=%zu (%.2f c/tok)  train=%zu val=%zu  params=%d\n",
+                tok.vocab(), d, layers, model.n_uniq, heads, model.n_kv, block, hidden,
+                ids.size(), (double)text.size() / ids.size(), ds.train.size(), ds.val.size(), nparams);
     std::fflush(stdout);
     if ((int)ds.train.size() < cfg.block + 2) { std::fprintf(stderr, "error: corpus too small\n"); return 1; }
 
@@ -89,7 +104,7 @@ static int cmd_train(const std::string& datafile, int steps, int vocab, int d, i
         Tensor loss = losses[0];
         for (size_t k = 1; k < losses.size(); ++k) loss = add(loss, losses[k]);
         loss = scalar_mul(loss, 1.0 / batch);
-        opt.zero_grad(); loss.backward(); opt.step(lr);
+        opt.zero_grad(); loss.backward(); opt.step(wsd_lr(step, steps, lr));
 
         if (step % 100 == 0) {
             double vl = eval_loss(model, ds.val, cfg.block, 32);
@@ -109,7 +124,7 @@ static int cmd_train(const std::string& datafile, int steps, int vocab, int d, i
 static int cmd_eval(const std::string& path, const std::string& promptsfile, real temp) {
     std::mt19937 rng(0);
     BPETokenizer tok;
-    GPT model = load_stories(path, tok, rng);
+    ModernGPT model = load_stories(path, tok, rng);
     std::string content = read_file(promptsfile);
     if (content.empty()) { std::fprintf(stderr, "error: no prompts (%s)\n", promptsfile.c_str()); return 1; }
     std::istringstream iss(content);
@@ -127,7 +142,7 @@ static int cmd_eval(const std::string& path, const std::string& promptsfile, rea
 static int cmd_gen(const std::string& path, const std::string& prompt) {
     std::mt19937 rng(0);
     BPETokenizer tok;
-    GPT model = load_stories(path, tok, rng);
+    ModernGPT model = load_stories(path, tok, rng);
     std::vector<int> ctx = tok.encode(prompt.empty() ? std::string("Once upon a time") : prompt);
     if (ctx.empty()) ctx.push_back(0);
     std::printf("%s%s\n", prompt.c_str(), generate(model, ctx, 300, 0.8, rng, tok.id2str).c_str());
@@ -137,16 +152,18 @@ static int cmd_gen(const std::string& path, const std::string& prompt) {
 int main(int argc, char** argv) {
     std::string mode = (argc > 1) ? argv[1] : "train";
     if (mode == "train") {
-        if (argc < 3) { std::fprintf(stderr, "usage: psi_stories train <data> <steps> [vocab] [d] [layers] [block] [hidden] [heads]\n"); return 1; }
+        if (argc < 3) { std::fprintf(stderr, "usage: psi_stories train <data> <steps> [vocab] [d] [layers] [block] [hidden] [heads] [n_kv] [n_unique]\n"); return 1; }
         std::string data = argv[2];
-        int steps = (argc > 3) ? std::atoi(argv[3]) : 2000;
-        int vocab = (argc > 4) ? std::atoi(argv[4]) : 1024;
-        int d = (argc > 5) ? std::atoi(argv[5]) : 128;
-        int layers = (argc > 6) ? std::atoi(argv[6]) : 5;
-        int block = (argc > 7) ? std::atoi(argv[7]) : 128;
-        int hidden = (argc > 8) ? std::atoi(argv[8]) : 384;
-        int heads = (argc > 9) ? std::atoi(argv[9]) : 4;
-        return cmd_train(data, steps, vocab, d, layers, block, hidden, heads);
+        int steps  = (argc > 3)  ? std::atoi(argv[3])  : 2000;
+        int vocab  = (argc > 4)  ? std::atoi(argv[4])  : 1024;
+        int d      = (argc > 5)  ? std::atoi(argv[5])  : 128;
+        int layers = (argc > 6)  ? std::atoi(argv[6])  : 5;
+        int block  = (argc > 7)  ? std::atoi(argv[7])  : 128;
+        int hidden = (argc > 8)  ? std::atoi(argv[8])  : 384;
+        int heads  = (argc > 9)  ? std::atoi(argv[9])  : 4;
+        int nkv    = (argc > 10) ? std::atoi(argv[10]) : 0;   // 0 = MHA (n_kv = n_heads)
+        int nuniq  = (argc > 11) ? std::atoi(argv[11]) : 0;   // 0 = no weight sharing
+        return cmd_train(data, steps, vocab, d, layers, block, hidden, heads, nkv, nuniq);
     }
     if (mode == "eval") {
         if (argc < 3) { std::fprintf(stderr, "usage: psi_stories eval <model.bin> [prompts] [temp]\n"); return 1; }

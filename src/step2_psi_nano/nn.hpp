@@ -203,6 +203,33 @@ inline Tensor silu(const Tensor& A) {
     return out;
 }
 
+// Rotary Position Embedding on a [T, dh] tensor (row r is at position r). Rotates dim-pairs (2i,2i+1)
+// by angle r·base^(-2i/dh). No parameters (replaces the learned pos-emb, saving block·d params), and
+// better relative-position behavior. Applied to Q and K per head. dh must be even.
+inline Tensor rope(const Tensor& X, real base = 10000.0) {
+    assert(X.shape().size() == 2 && X.dim(1) % 2 == 0);
+    int T = X.dim(0), dh = X.dim(1), half = dh / 2;
+    Tensor out = make_out({T, dh}, "rope", {X.node});
+    for (int r = 0; r < T; ++r)
+        for (int i = 0; i < half; ++i) {
+            real ang = r * std::pow(base, -2.0 * i / dh), c = std::cos(ang), s = std::sin(ang);
+            real x0 = X.data()[r * dh + 2 * i], x1 = X.data()[r * dh + 2 * i + 1];
+            out.data()[r * dh + 2 * i]     = x0 * c - x1 * s;       // [[c,-s],[s,c]] · x
+            out.data()[r * dh + 2 * i + 1] = x0 * s + x1 * c;
+        }
+    TensorNode *Xp = X.node.get(), *Op = out.node.get();
+    out.node->backward_fn = [Xp, Op, T, dh, half, base] {
+        for (int r = 0; r < T; ++r)
+            for (int i = 0; i < half; ++i) {
+                real ang = r * std::pow(base, -2.0 * i / dh), c = std::cos(ang), s = std::sin(ang);
+                real g0 = Op->grad[r * dh + 2 * i], g1 = Op->grad[r * dh + 2 * i + 1];
+                Xp->grad[r * dh + 2 * i]     += c * g0 + s * g1;    // Rᵀ · dout
+                Xp->grad[r * dh + 2 * i + 1] += -s * g0 + c * g1;
+            }
+    };
+    return out;
+}
+
 // Fused softmax + cross-entropy (numerically stable). logits [n,V], integer targets [n].
 // loss = mean_i -log softmax(logits_i)[target_i].  dlogits_i = (softmax_i - onehot_i)/n.
 inline Tensor cross_entropy(const Tensor& logits, const std::vector<int>& targets) {
