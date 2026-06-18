@@ -302,6 +302,12 @@ inline void Tensor::backward() const {
     node->grad[0] = 1.0;
     for (auto it = topo.rbegin(); it != topo.rend(); ++it)
         if ((*it)->backward_fn) (*it)->backward_fn();
+
+    // Tear down the (single-use) graph: drop each node's parents + backward closure so the whole
+    // forward graph's memory is released now, instead of lingering across training steps. Guards
+    // against any retained reference (e.g. a closure capturing a NodePtr) that would otherwise
+    // accumulate ~one graph per step and OOM a long run. Params survive (held by the model/optimizer).
+    for (TensorNode* n : topo) { n->backward_fn = nullptr; n->parents.clear(); }
 }
 
 }  // namespace psi

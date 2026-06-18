@@ -110,7 +110,7 @@ static int cmd_train(const std::string& datafile, int steps, int vocab, int d, i
         opt.step(wsd_lr(step, steps, lr));
 
         if (step % 100 == 0) {
-            double vl = eval_loss(model, ds.val, cfg.block, 32);
+            double vl = (step % 1000 == 0) ? eval_loss(model, ds.val, cfg.block, 16) : 0.0;  // eval rarely (memory)
             double el = std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - t0).count();
             std::printf("step %5d   train %.4f   val %.4f   (%.1fs)\n", step, lsum, vl, el);
             std::fflush(stdout);
