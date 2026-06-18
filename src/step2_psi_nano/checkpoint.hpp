@@ -20,7 +20,7 @@ inline void save_checkpoint(const std::string& path, GPT& model, const CharToken
     std::ofstream f(path, std::ios::binary);
     if (!f) throw std::runtime_error("cannot write checkpoint: " + path);
     f.write("PSI1", 4);
-    int cfg[5] = {model.cfg.vocab, model.cfg.d_model, model.cfg.n_layers, model.cfg.block, model.cfg.hidden};
+    int cfg[6] = {model.cfg.vocab, model.cfg.d_model, model.cfg.n_layers, model.cfg.block, model.cfg.hidden, model.cfg.n_heads};
     f.write(reinterpret_cast<char*>(cfg), sizeof(cfg));
     int vsz = tok.vocab();
     f.write(reinterpret_cast<char*>(&vsz), sizeof(int));
@@ -38,9 +38,9 @@ inline GPT load_checkpoint(const std::string& path, CharTokenizer& tok, std::mt1
     char magic[4];
     f.read(magic, 4);
     if (std::string(magic, 4) != "PSI1") throw std::runtime_error("bad checkpoint magic: " + path);
-    int cfg[5];
+    int cfg[6];
     f.read(reinterpret_cast<char*>(cfg), sizeof(cfg));
-    Config c{cfg[0], cfg[1], cfg[2], cfg[3], cfg[4]};
+    Config c{cfg[0], cfg[1], cfg[2], cfg[3], cfg[4], cfg[5]};
     int vsz;
     f.read(reinterpret_cast<char*>(&vsz), sizeof(int));
     tok.id2ch.resize(vsz);

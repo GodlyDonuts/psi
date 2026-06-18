@@ -77,5 +77,18 @@ int main() {
       std::vector<int> tgt = {1,3,0};
       check("cross_entropy",{logits}, [&]{ return cross_entropy(logits, tgt); }); }
 
+    // --- modern-architecture ops (multi-head attention + SwiGLU) ---
+    { Tensor A = Tensor::randn({4,6}, rng, 1);
+      Scalarizer s({4,3}, rng);
+      check("slice_cols",  {A}, [&]{ return s(slice_cols(A, 2, 3)); }); }
+
+    { Tensor A = Tensor::randn({3,2}, rng, 1), B = Tensor::randn({3,4}, rng, 1);
+      Scalarizer s({3,6}, rng);
+      check("concat_cols", {A,B}, [&]{ return s(concat_cols({A,B})); }); }
+
+    { Tensor A = Tensor::randn({3,4}, rng, 1);
+      Scalarizer s({3,4}, rng);
+      check("silu",        {A}, [&]{ return s(silu(A)); }); }
+
     return 0;
 }

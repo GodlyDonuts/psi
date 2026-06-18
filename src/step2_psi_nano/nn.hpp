@@ -146,6 +146,63 @@ inline Tensor gelu(const Tensor& A) {
     return out;
 }
 
+// Column slice: out[i,j] = A[i, c0+j], for [r,c] -> [r,w]. Splits Q/K/V into per-head sub-tiles.
+inline Tensor slice_cols(const Tensor& A, int c0, int w) {
+    assert(A.shape().size() == 2);
+    int r = A.dim(0), c = A.dim(1);
+    assert(c0 >= 0 && c0 + w <= c);
+    Tensor out = make_out({r, w}, "slice_cols", {A.node});
+    for (int i = 0; i < r; ++i)
+        for (int j = 0; j < w; ++j) out.data()[i * w + j] = A.data()[i * c + c0 + j];
+    TensorNode *Ap = A.node.get(), *Op = out.node.get();
+    out.node->backward_fn = [Ap, Op, r, c, c0, w] {
+        for (int i = 0; i < r; ++i)
+            for (int j = 0; j < w; ++j) Ap->grad[i * c + c0 + j] += Op->grad[i * w + j];
+    };
+    return out;
+}
+
+// Column concat: join [r,w0],[r,w1],… -> [r, sum w]. Re-joins the per-head context tiles.
+inline Tensor concat_cols(const std::vector<Tensor>& parts) {
+    assert(!parts.empty());
+    int r = parts[0].dim(0), total = 0;
+    std::vector<NodePtr> deps;
+    for (auto& p : parts) { assert(p.dim(0) == r); total += p.dim(1); deps.push_back(p.node); }
+    Tensor out = make_out({r, total}, "concat_cols", deps);
+    std::vector<TensorNode*> pps; std::vector<int> ws, offs;
+    int off = 0;
+    for (auto& p : parts) {
+        int w = p.dim(1);
+        for (int i = 0; i < r; ++i)
+            for (int j = 0; j < w; ++j) out.data()[i * total + off + j] = p.data()[i * w + j];
+        pps.push_back(p.node.get()); ws.push_back(w); offs.push_back(off); off += w;
+    }
+    TensorNode* Op = out.node.get();
+    out.node->backward_fn = [pps, ws, offs, Op, r, total] {
+        for (size_t k = 0; k < pps.size(); ++k) {
+            int w = ws[k], o = offs[k]; TensorNode* P = pps[k];
+            for (int i = 0; i < r; ++i)
+                for (int j = 0; j < w; ++j) P->grad[i * w + j] += Op->grad[i * total + o + j];
+        }
+    };
+    return out;
+}
+
+// SiLU / Swish:  y = x * sigmoid(x).  (For SwiGLU MLPs; pairs with the existing elementwise mul.)
+inline Tensor silu(const Tensor& A) {
+    Tensor out = make_out(A.shape(), "silu", {A.node});
+    int n = A.numel();
+    for (int i = 0; i < n; ++i) { real x = A.data()[i]; out.data()[i] = x / (1.0 + std::exp(-x)); }
+    TensorNode *Ap = A.node.get(), *Op = out.node.get();
+    out.node->backward_fn = [Ap, Op, n] {
+        for (int i = 0; i < n; ++i) {
+            real x = Ap->data[i], s = 1.0 / (1.0 + std::exp(-x));
+            Ap->grad[i] += (s + x * s * (1.0 - s)) * Op->grad[i];   // d/dx [x·σ(x)] = σ + x·σ(1-σ)
+        }
+    };
+    return out;
+}
+
 // Fused softmax + cross-entropy (numerically stable). logits [n,V], integer targets [n].
 // loss = mean_i -log softmax(logits_i)[target_i].  dlogits_i = (softmax_i - onehot_i)/n.
 inline Tensor cross_entropy(const Tensor& logits, const std::vector<int>& targets) {

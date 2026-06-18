@@ -17,6 +17,7 @@ namespace psi {
 
 struct Config {
     int vocab, d_model, n_layers, block, hidden;
+    int n_heads = 1;   // multi-head attention; 1 reproduces the original single-head psi-nano exactly
 };
 
 struct Block {
@@ -73,15 +74,20 @@ struct GPT {
 
         Tensor x    = add(embedding(tok_emb, ids), embedding(pos_emb, pos));  // [T,d]
         Tensor mask = causal_mask(T);
-        real   scale = 1.0 / std::sqrt((real)d);
+        int    H    = cfg.n_heads, dh = d / H;
+        real   scale = 1.0 / std::sqrt((real)dh);     // scale by head dim (H=1 -> 1/sqrt(d), as before)
 
         for (auto& b : blocks) {
-            // --- attention (pre-norm, residual) ---
-            Tensor h      = rmsnorm(x, b.attn_g);
-            Tensor Q      = matmul(h, b.wq), K = matmul(h, b.wk), V = matmul(h, b.wv);
-            Tensor scores = add(scalar_mul(matmul(Q, transpose(K)), scale), mask);  // [T,T]
-            Tensor attn   = softmax_rows(scores);
-            Tensor ctx    = matmul(attn, V);          // [T,d]
+            // --- multi-head attention (pre-norm, residual). H=1 == the original single-head path. ---
+            Tensor h = rmsnorm(x, b.attn_g);
+            Tensor Q = matmul(h, b.wq), K = matmul(h, b.wk), V = matmul(h, b.wv);   // [T,d]
+            std::vector<Tensor> heads;
+            for (int hh = 0; hh < H; ++hh) {
+                Tensor Qh = slice_cols(Q, hh * dh, dh), Kh = slice_cols(K, hh * dh, dh), Vh = slice_cols(V, hh * dh, dh);
+                Tensor sc = add(scalar_mul(matmul(Qh, transpose(Kh)), scale), mask);   // [T,T]
+                heads.push_back(matmul(softmax_rows(sc), Vh));                          // [T,dh]
+            }
+            Tensor ctx = (H == 1) ? heads[0] : concat_cols(heads);   // [T,d]
             x = add(x, matmul(ctx, b.wo));            // residual
 
             // --- MLP (pre-norm, residual) ---

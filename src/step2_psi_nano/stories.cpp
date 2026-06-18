@@ -33,7 +33,7 @@ static const char* MODEL_PATH = "psi_stories.bin";
 static void save_stories(const std::string& path, GPT& model, const BPETokenizer& tok) {
     std::ofstream f(path, std::ios::binary);
     f.write("PSST", 4);
-    int cfg[5] = {model.cfg.vocab, model.cfg.d_model, model.cfg.n_layers, model.cfg.block, model.cfg.hidden};
+    int cfg[6] = {model.cfg.vocab, model.cfg.d_model, model.cfg.n_layers, model.cfg.block, model.cfg.hidden, model.cfg.n_heads};
     f.write(reinterpret_cast<char*>(cfg), sizeof(cfg));
     tok.save(f);
     for (auto& p : model.params()) { auto& d = p.data(); f.write(reinterpret_cast<char*>(d.data()), (std::streamsize)(d.size() * sizeof(real))); }
@@ -43,17 +43,18 @@ static GPT load_stories(const std::string& path, BPETokenizer& tok, std::mt19937
     if (!f) throw std::runtime_error("cannot open " + path);
     char magic[4]; f.read(magic, 4);
     if (std::string(magic, 4) != "PSST") throw std::runtime_error("bad magic in " + path);
-    int cfg[5]; f.read(reinterpret_cast<char*>(cfg), sizeof(cfg));
-    Config c{cfg[0], cfg[1], cfg[2], cfg[3], cfg[4]};
+    int cfg[6]; f.read(reinterpret_cast<char*>(cfg), sizeof(cfg));
+    Config c{cfg[0], cfg[1], cfg[2], cfg[3], cfg[4], cfg[5]};
     tok.load(f);
     GPT model(c, rng);
     for (auto& p : model.params()) { auto& d = p.data(); f.read(reinterpret_cast<char*>(d.data()), (std::streamsize)(d.size() * sizeof(real))); }
     return model;
 }
 
-static int cmd_train(const std::string& datafile, int steps, int vocab, int d, int layers, int block, int hidden) {
+static int cmd_train(const std::string& datafile, int steps, int vocab, int d, int layers, int block, int hidden, int heads) {
     std::string text = read_file(datafile);
     if (text.empty()) { std::fprintf(stderr, "error: empty/unreadable data (%s)\n", datafile.c_str()); return 1; }
+    if (d % heads != 0) { std::fprintf(stderr, "error: d_model %d not divisible by n_heads %d\n", d, heads); return 1; }
 
     std::printf("fitting BPE (vocab=%d) ...\n", vocab); std::fflush(stdout);
     BPETokenizer tok;
@@ -61,7 +62,7 @@ static int cmd_train(const std::string& datafile, int steps, int vocab, int d, i
     std::vector<int> ids = tok.encode(text);
     Dataset ds(ids, 0.1);
 
-    Config cfg{tok.vocab(), d, layers, block, hidden};
+    Config cfg{tok.vocab(), d, layers, block, hidden, heads};
     std::mt19937 rng(1234);
     GPT model(cfg, rng);
     AdamW opt(model.params());
@@ -69,8 +70,8 @@ static int cmd_train(const std::string& datafile, int steps, int vocab, int d, i
     const real lr = 1e-3;
 
     int nparams = 0; for (auto& p : model.params()) nparams += p.numel();
-    std::printf("psi-stories | chars=%zu  vocab=%d  tokens=%zu  (%.2f chars/tok)  train=%zu val=%zu  params=%d\n",
-                text.size(), tok.vocab(), ids.size(), (double)text.size() / ids.size(),
+    std::printf("psi-stories | vocab=%d d=%d layers=%d heads=%d block=%d hidden=%d  tokens=%zu (%.2f c/tok)  train=%zu val=%zu  params=%d\n",
+                tok.vocab(), d, layers, heads, block, hidden, ids.size(), (double)text.size() / ids.size(),
                 ds.train.size(), ds.val.size(), nparams);
     std::fflush(stdout);
     if ((int)ds.train.size() < cfg.block + 2) { std::fprintf(stderr, "error: corpus too small\n"); return 1; }
@@ -136,7 +137,7 @@ static int cmd_gen(const std::string& path, const std::string& prompt) {
 int main(int argc, char** argv) {
     std::string mode = (argc > 1) ? argv[1] : "train";
     if (mode == "train") {
-        if (argc < 3) { std::fprintf(stderr, "usage: psi_stories train <data> <steps> [vocab] [d] [layers] [block] [hidden]\n"); return 1; }
+        if (argc < 3) { std::fprintf(stderr, "usage: psi_stories train <data> <steps> [vocab] [d] [layers] [block] [hidden] [heads]\n"); return 1; }
         std::string data = argv[2];
         int steps = (argc > 3) ? std::atoi(argv[3]) : 2000;
         int vocab = (argc > 4) ? std::atoi(argv[4]) : 1024;
@@ -144,7 +145,8 @@ int main(int argc, char** argv) {
         int layers = (argc > 6) ? std::atoi(argv[6]) : 5;
         int block = (argc > 7) ? std::atoi(argv[7]) : 128;
         int hidden = (argc > 8) ? std::atoi(argv[8]) : 384;
-        return cmd_train(data, steps, vocab, d, layers, block, hidden);
+        int heads = (argc > 9) ? std::atoi(argv[9]) : 4;
+        return cmd_train(data, steps, vocab, d, layers, block, hidden, heads);
     }
     if (mode == "eval") {
         if (argc < 3) { std::fprintf(stderr, "usage: psi_stories eval <model.bin> [prompts] [temp]\n"); return 1; }
