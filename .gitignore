@@ -52,3 +52,4 @@ wandb/
 /ternary_gemm
 /ternary_fp16
 /fused_ternary
+/bpe_test
