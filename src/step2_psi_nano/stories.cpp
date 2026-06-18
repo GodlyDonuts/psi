@@ -94,22 +94,25 @@ static int cmd_train(const std::string& datafile, int steps, int vocab, int d, i
     std::uniform_int_distribution<int> pick(0, (int)ds.train.size() - cfg.block - 2);
     auto t0 = std::chrono::high_resolution_clock::now();
     for (int step = 0; step <= steps; ++step) {
-        std::vector<Tensor> losses;
+        // Gradient accumulation: forward+backward ONE sequence at a time, accumulating grads into the
+        // params, then step. Holds only one forward graph in memory at a time (~batch× less peak than
+        // building all batch graphs then one backward) — essential on the 8GB M1. Same effective batch.
+        opt.zero_grad();
+        real lsum = 0;
         for (int b = 0; b < batch; ++b) {
             int i = pick(rng);
             std::vector<int> in(ds.train.begin() + i, ds.train.begin() + i + cfg.block);
             std::vector<int> tg(ds.train.begin() + i + 1, ds.train.begin() + i + 1 + cfg.block);
-            losses.push_back(cross_entropy(model.forward(in), tg));
+            Tensor l = scalar_mul(cross_entropy(model.forward(in), tg), 1.0 / batch);
+            l.backward();                          // accumulates into param grads; graph freed at scope end
+            lsum += l.data()[0];
         }
-        Tensor loss = losses[0];
-        for (size_t k = 1; k < losses.size(); ++k) loss = add(loss, losses[k]);
-        loss = scalar_mul(loss, 1.0 / batch);
-        opt.zero_grad(); loss.backward(); opt.step(wsd_lr(step, steps, lr));
+        opt.step(wsd_lr(step, steps, lr));
 
         if (step % 100 == 0) {
             double vl = eval_loss(model, ds.val, cfg.block, 32);
             double el = std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - t0).count();
-            std::printf("step %5d   train %.4f   val %.4f   (%.1fs)\n", step, loss.data()[0], vl, el);
+            std::printf("step %5d   train %.4f   val %.4f   (%.1fs)\n", step, lsum, vl, el);
             std::fflush(stdout);
         }
     }
