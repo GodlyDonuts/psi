@@ -54,3 +54,5 @@ wandb/
 /fused_ternary
 /bpe_test
 /psi_stories
+/results/
+/data/
