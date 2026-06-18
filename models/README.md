@@ -26,17 +26,18 @@ Coherence, and Consistency. The **smallest row that passes is the result.**
 All variations use the **full modern stack**: small-BPE · multi-head + **GQA** · **RoPE** · **SwiGLU** ·
 **block-wise weight-sharing** (deep-and-thin) · tied embeddings · **WSD** schedule (see [RESEARCH.md](../docs/RESEARCH.md)).
 
-> **First-pass note (8GB M1):** these runs are **undertrained** — an autograd memory ceiling capped each
-> at 2000–4000 steps (final loss ~2.5–2.7; TinyStories coherence needs ~1.5–2.0). They validate the stack
-> and rank relative quality; a full run (chunked training or a roomier machine) is the next phase.
+> **First-pass result (8GB M1) — see [docs/OVERNIGHT_REPORT.md](../docs/OVERNIGHT_REPORT.md).** A memory
+> ceiling capped trainable steps, and the per-step cost **scales with model size**, so only the smallest
+> model (nano_130k) trained meaningfully — the rest OOM'd undertrained (no checkpoint). Nothing cleared the
+> bar: that's **undertraining, not architecture**. Full training (chunked resume / roomier machine) is next.
 
-| model | params | bits/wt | size | steps | Gram | Coh | Cons | Plot | clears bar? |
+| model | params | size | steps reached | loss | Gram | Coh | Cons | Plot | clears bar? |
 |---|---|---|---|---|---|---|---|---|---|
-| flagship_900k | ~918K | 32 (fp32) | ~3.7 MB | 2000 | — | — | — | — | _pending_ |
-| mid_570k      | ~574K | 32 | ~2.3 MB | 2500 | — | — | — | — | _pending_ |
-| small_350k    | ~354K | 32 | ~1.4 MB | 3000 | — | — | — | — | _pending_ |
-| tiny_215k     | ~215K | 32 | ~0.9 MB | 4000 | — | — | — | — | _pending_ |
-| nano_130k     | 131K  | 32 | 0.5 MB  | 4000 | 5 | 3 | 2 | 2 | ❌ grammatical + right vocab, but drifts (undertrained) |
+| **nano_130k** | 131K | 0.5 MB | **4000 ✓** | 2.70 | 5 | 3 | 2 | 2 | ❌ grammatical + right vocab, drifts (undertrained) |
+| tiny_215k | 215K | 0.9 MB | ~700 (OOM) | 3.21 | — | — | — | — | ❌ OOM, no checkpoint |
+| small_350k | 354K | 1.4 MB | ~400 (OOM) | 3.68 | — | — | — | — | ❌ OOM, no checkpoint |
+| mid_570k | 574K | 2.3 MB | ~200 (OOM) | 5.44 | — | — | — | — | ❌ OOM, no checkpoint |
+| flagship_900k | 918K | 3.7 MB | ~0 (OOM) | — | — | — | — | — | ❌ OOM, no checkpoint |
 
 _Next after the fp32 frontier is found: re-train the smallest passing config with **ternary (~1.58-bit)**
 weights → the same capability at ~16× fewer bits (e.g. a passing 400K model → ~0.08 MB)._
