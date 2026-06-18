@@ -110,6 +110,28 @@ static int cmd_gen(const std::string& path, const std::string& prompt) {
     return 0;
 }
 
+// Capability eval: generate a completion for each story-opening prompt (see docs/EVAL.md).
+// The completions are graded by a strong model (Claude) against the rubric — this is the bar that
+// the capability-per-bit search shrinks against.
+static int cmd_eval(const std::string& path, const std::string& promptsfile, real temp) {
+    std::mt19937 rng(0);
+    CharTokenizer tok;
+    GPT model = load_checkpoint(path, tok, rng);
+    std::string content = read_file(promptsfile);
+    if (content.empty()) { std::fprintf(stderr, "error: no prompts (%s)\n", promptsfile.c_str()); return 1; }
+    std::istringstream iss(content);
+    std::string line;
+    int idx = 1;
+    while (std::getline(iss, line)) {
+        if (line.empty()) continue;
+        std::vector<int> ctx = tok.encode(line);
+        if (ctx.empty()) ctx.push_back(0);
+        std::string comp = generate(model, ctx, 220, temp, rng, tok.id2ch);
+        std::printf("=== prompt %d ===\n%s  ┃>>>┃  %s\n\n", idx++, line.c_str(), comp.c_str());
+    }
+    return 0;
+}
+
 static int cmd_chat(GPT& model, CharTokenizer& tok, std::mt19937& rng) {
     std::printf("\n[interactive] type a seed (chars from the training vocab); 'quit' to exit.\n> ");
     std::fflush(stdout);
@@ -142,6 +164,12 @@ int main(int argc, char** argv) {
         std::string prompt = (argc > 3) ? argv[3] : "";
         return cmd_gen(argv[2], prompt);
     }
+    if (mode == "eval") {
+        if (argc < 3) { std::fprintf(stderr, "usage: psi_nano eval <model.bin> [prompts.txt] [temp]\n"); return 1; }
+        std::string pf = (argc > 3) ? argv[3] : "eval/tinystories_prompts.txt";
+        real temp = (argc > 4) ? (real)std::atof(argv[4]) : 0.8;
+        return cmd_eval(argv[2], pf, temp);
+    }
     if (mode == "chat") {
         std::mt19937 rng(0);
         CharTokenizer tok;
@@ -172,6 +200,6 @@ int main(int argc, char** argv) {
         return cmd_chat(model, tok, rng);
     }
 
-    std::fprintf(stderr, "usage: psi_nano (train [data] [steps] | gen <model> [prompt] | chat [model])\n");
+    std::fprintf(stderr, "usage: psi_nano (train [data] [steps] | gen <model> [prompt] | eval <model> [prompts] [temp] | chat [model])\n");
     return 1;
 }
