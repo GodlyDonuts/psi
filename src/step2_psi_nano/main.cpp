@@ -44,8 +44,10 @@ static bool is_number(const std::string& s) {
     return true;
 }
 
-// Run training and save a checkpoint.
-static int cmd_train(const std::string& datafile, int steps) {
+// Run training and save a checkpoint. Model size is configurable (the capability-per-bit search
+// sweeps it): d_model, n_layers, block (context), hidden (MLP width).
+static int cmd_train(const std::string& datafile, int steps,
+                     int d, int layers, int block, int hidden) {
     std::string text = datafile.empty() ? CORPUS : read_file(datafile);
     if (text.empty()) { std::fprintf(stderr, "error: empty/unreadable data (%s)\n", datafile.c_str()); return 1; }
 
@@ -53,7 +55,7 @@ static int cmd_train(const std::string& datafile, int steps) {
     tok.fit(text);
     Dataset ds(tok.encode(text), 0.1);
 
-    Config cfg{tok.vocab(), /*d*/ 64, /*layers*/ 2, /*block*/ 32, /*hidden*/ 256};
+    Config cfg{tok.vocab(), d, layers, block, hidden};
     std::mt19937 rng(1234);
     GPT model(cfg, rng);
     AdamW opt(model.params());
@@ -89,6 +91,7 @@ static int cmd_train(const std::string& datafile, int steps) {
             double vl = eval_loss(model, ds.val, cfg.block);
             double el = std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - t0).count();
             std::printf("step %5d   train %.4f   val %.4f   (%.1fs)\n", step, loss.data()[0], vl, el);
+            std::fflush(stdout);   // flush so long background runs show progress live (stdout is block-buffered off-tty)
         }
     }
 
@@ -150,14 +153,17 @@ int main(int argc, char** argv) {
     std::string mode = (argc > 1) ? argv[1] : "train";
 
     if (mode == "train") {
+        // train [datafile] [steps] [d] [layers] [block] [hidden]
         std::string datafile;
-        int steps = 2000;
-        if (argc > 2) {
-            std::string a2 = argv[2];
-            if (is_number(a2)) steps = std::atoi(a2.c_str());
-            else { datafile = a2; if (argc > 3) steps = std::atoi(argv[3]); }
-        }
-        return cmd_train(datafile, steps);
+        int steps = 2000, d = 64, layers = 2, block = 32, hidden = 256;
+        int ai = 2;
+        if (argc > ai && !is_number(argv[ai])) datafile = argv[ai++];
+        if (argc > ai) steps  = std::atoi(argv[ai++]);
+        if (argc > ai) d      = std::atoi(argv[ai++]);
+        if (argc > ai) layers = std::atoi(argv[ai++]);
+        if (argc > ai) block  = std::atoi(argv[ai++]);
+        if (argc > ai) hidden = std::atoi(argv[ai++]);
+        return cmd_train(datafile, steps, d, layers, block, hidden);
     }
     if (mode == "gen") {
         if (argc < 3) { std::fprintf(stderr, "usage: psi_nano gen <model.bin> [prompt]\n"); return 1; }
