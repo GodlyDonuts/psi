@@ -11,10 +11,14 @@
 
 #pragma once
 
+#include <algorithm>
 #include <climits>
 #include <cstdint>
+#include <istream>
+#include <ostream>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace psi {
@@ -105,6 +109,34 @@ struct BPETokenizer {
     }
     std::string decode(const std::vector<int>& ids) const {
         std::string s; for (int i : ids) if (i >= 0 && i < vocab()) s += id2str[i]; return s;
+    }
+    std::string token(int id) const { return (id >= 0 && id < vocab()) ? id2str[id] : std::string(); }
+
+    // Serialize: base chars (ids 0..nbase-1, all length-1) then the merge pairs (a,b) in id order.
+    // That fully reconstructs id2str + the merge tables, so a checkpoint can re-encode prompts.
+    void save(std::ostream& o) const {
+        int nb = (int)base_id.size();
+        o.write(reinterpret_cast<char*>(&nb), 4);
+        for (int i = 0; i < nb; ++i) o.write(id2str[i].data(), 1);   // base tokens are single chars
+        int nm = (int)id2str.size() - nb;
+        o.write(reinterpret_cast<char*>(&nm), 4);
+        std::vector<std::pair<int, std::pair<int,int>>> mv;          // (nid, (a,b))
+        mv.reserve(merged_.size());
+        for (auto& kv : merged_) mv.push_back({kv.second, {(int)(kv.first >> 21), (int)(kv.first & 0x1FFFFF)}});
+        std::sort(mv.begin(), mv.end());                            // by nid == merge order
+        for (auto& m : mv) { int a = m.second.first, b = m.second.second; o.write((char*)&a, 4); o.write((char*)&b, 4); }
+    }
+    void load(std::istream& in) {
+        id2str.clear(); base_id.clear(); rank_.clear(); merged_.clear();
+        int nb; in.read(reinterpret_cast<char*>(&nb), 4);
+        for (int i = 0; i < nb; ++i) { char c; in.read(&c, 1); std::string s(1, c); base_id[s] = (int)id2str.size(); id2str.push_back(s); }
+        int nm; in.read(reinterpret_cast<char*>(&nm), 4);
+        for (int i = 0; i < nm; ++i) {
+            int a, b; in.read((char*)&a, 4); in.read((char*)&b, 4);
+            int nid = (int)id2str.size();
+            id2str.push_back(id2str[a] + id2str[b]);
+            int64_t k = key(a, b); rank_[k] = (int)rank_.size(); merged_[k] = nid;
+        }
     }
 };
 

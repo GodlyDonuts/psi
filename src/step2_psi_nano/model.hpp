@@ -147,4 +147,29 @@ inline std::string generate(GPT& model, std::vector<int> ctx, int n_new,
     return out;
 }
 
+// Same sampler, but decodes via a string vocab (multi-char tokens) — for the BPE psi-stories model.
+inline std::string generate(GPT& model, std::vector<int> ctx, int n_new,
+                            real temp, std::mt19937& rng,
+                            const std::vector<std::string>& id2str) {
+    int V = model.cfg.vocab, block = model.cfg.block;
+    std::string out;
+    for (int s = 0; s < n_new; ++s) {
+        int start = std::max(0, (int)ctx.size() - block);
+        std::vector<int> window(ctx.begin() + start, ctx.end());
+        Tensor logits = model.forward(window);
+        int L = (int)window.size();
+        std::vector<real> probs(V);
+        real mx = -1e30;
+        for (int j = 0; j < V; ++j) mx = std::max(mx, logits.data()[(L - 1) * V + j] / temp);
+        real Z = 0;
+        for (int j = 0; j < V; ++j) { real e = std::exp(logits.data()[(L - 1) * V + j] / temp - mx); probs[j] = e; Z += e; }
+        for (int j = 0; j < V; ++j) probs[j] /= Z;
+        std::discrete_distribution<int> dist(probs.begin(), probs.end());
+        int next = dist(rng);
+        ctx.push_back(next);
+        out += id2str[next];
+    }
+    return out;
+}
+
 }  // namespace psi
