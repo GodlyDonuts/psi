@@ -29,13 +29,15 @@ cmake-build-*/
 /agtest
 /attention_metal
 
-# ML artifacts — never commit weights, datasets, or logs
+# ML artifacts — never commit weights or raw datasets (but DO commit per-model text records:
+# each models/<name>/ keeps MODEL.md + train.txt + eval.txt so a model is reproducible).
 *.bin
 *.pt
 *.safetensors
 *.gguf
 checkpoints/
-data/
+data/*.txt
+data/*.bin
 datasets/
 runs/
 wandb/
@@ -55,4 +57,3 @@ wandb/
 /bpe_test
 /psi_stories
 /results/
-/data/
