@@ -7,7 +7,7 @@
 ## The method (TinyStories' "GPT-Eval", 2026 edition)
 
 The original TinyStories paper graded models by feeding a strong LLM a story beginning + the small
-model's completion, and scoring it. We do the same — **the grader is Claude.** The harness generates
+model's completion, and scoring it. We do the same — **the grader is a strong LLM.** The harness generates
 completions; a strong model reads them and scores the rubric below.
 
 ```sh

@@ -114,7 +114,7 @@ static int cmd_gen(const std::string& path, const std::string& prompt) {
 }
 
 // Capability eval: generate a completion for each story-opening prompt (see docs/EVAL.md).
-// The completions are graded by a strong model (Claude) against the rubric — this is the bar that
+// The completions are graded by a strong model against the rubric — this is the bar that
 // the capability-per-bit search shrinks against.
 static int cmd_eval(const std::string& path, const std::string& promptsfile, real temp) {
     std::mt19937 rng(0);

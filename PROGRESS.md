@@ -29,7 +29,7 @@ then crush the *bits* with ternary (~1.58-bit) weights on our own kernel.
 | **Step 2** psi-nano (char-level GPT, the prototype) | ✅ trains, generates fluent corpus English | `src/step2_psi_nano/` (`main.cpp`, `model.hpp`, `nn.hpp`) |
 | **Step 3** GPU kernels (Metal) | ✅ matmul **parity-class with MLX** (99% on key shape) + a **novel ternary GEMM** (16× smaller weights, full speed) | `src/step3_metal/`, writeup `docs/GPU_KERNELS.md` |
 | **psi-stories** modern sub-1M model | ✅ built, trains/saves/loads/generates; all techniques grad-checked | `src/step2_psi_nano/stories.cpp` + `model_stories.hpp` |
-| **Capability bar** (the eval) | ✅ prompts + rubric; Claude grades | `eval/tinystories_prompts.txt`, `docs/EVAL.md` |
+| **Capability bar** (the eval) | ✅ prompts + rubric; an LLM grades | `eval/tinystories_prompts.txt`, `docs/EVAL.md` |
 | **First training run** | ⚠️ done but **memory-capped** (see below) | `docs/OVERNIGHT_REPORT.md`, `models/` |
 
 ### The modern psi-stories architecture (`model_stories.hpp`, `ModernGPT`)
@@ -127,6 +127,6 @@ Each trained model is reproducible from `models/<name>/MODEL.md` (exact config +
 - **`docs/DESIGN.md` · `docs/RADICAL.md` · `docs/SHOWCASE.md` · `docs/00-charter.md`** — vision/strategy.
 
 ## Working agreement (how we operate)
-Claude implements, user steers & learns; everything written to be read; novelty first-class; **never
+the assistant implements, user steers & learns; everything written to be read; novelty first-class; **never
 suggest "just use PyTorch"** (the custom stack IS the point); correctness is never traded for speed
 (grad-checks gate every op); "better" must be a *measured* number.
