@@ -2,7 +2,7 @@
 
 _Single-source status for picking up the project (e.g. in a new session). Last updated 2026-06-18._
 
-Repo: https://github.com/GodlyDonuts/Psi · everything below is committed + pushed to `main`.
+Repo: https://github.com/GodlyDonuts/Psi · everything below is committed + pushed to `main`
 
 ---
 
