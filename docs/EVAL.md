@@ -49,3 +49,40 @@ we shrink.
 | model | params | bits/wt | size | Gram | Coh | Cons | Plot | pass? |
 |---|---|---|---|---|---|---|---|---|
 | psi-nano (char, ctx 32, 8s train) | 106K | 32 | 0.4 MB | 1 | 1 | 1 | 1 | ❌ floor — char stats only, no valid words |
+
+---
+
+## Protocol v2 — FROZEN for the record campaign (2026-07-03)
+
+The record claim ("smallest that clears the bar") is only defensible if every model is graded under one
+fixed protocol. This freezes it. Grades are only comparable within v2; older single-completion grades
+(e.g. nano_130k 5/3/2/2) are re-run under v2 as the calibration anchor.
+
+**Generation (fixed, applies to every model INCLUDING baselines):**
+- `eval <model> eval/tinystories_prompts.txt 0.7 --k 3 --seed 100 --nnew 256`
+- temperature **0.7**, **full softmax (no top-k/top-p)** — matches how nano_130k was graded, kept for continuity.
+- **k = 3** completions per prompt, seeds **100, 101, 102** (reproducible). Generation **stops at the EOS
+  token** (`<|endoftext|>`), so each completion is one story — no multi-story spew.
+- prompt set: `eval/tinystories_prompts.txt` (12 openings). Preflight verified **0 verbatim occurrences**
+  in the training slice (contamination-clean); models train on `data/slice500.txt` with the valid split
+  excluded.
+
+**Scoring & the bar:**
+- Grade each of the 12×3 = 36 completions 1–10 on Grammar / Coherence / Consistency / Plot.
+- Per model, the score for a dimension is the **median** over all 36 completions (report median + IQR;
+  median is robust to the occasional degenerate sample). *(Change from v1's "average" — stated explicitly.)*
+- **Clears the bar** ⇔ median **Grammar, Coherence, Consistency all ≥ 7**. Plot is the stretch dimension.
+- Grading runs **off-cluster**: a strong LLM reads `models/<name>/eval.txt`; grade blind to model size
+  where feasible.
+
+**Loss ↔ grade calibration (the campaign's key output):** every finished model is graded regardless of
+size, building the val-loss → grade curve so the smallest bar-clearing size can be pinned (and undertrained
+small configs extended via resume). Estimated clear threshold ≈ val CE ≤ ~1.25 (vocab 512) / ~1.5 (vocab
+1024), i.e. ~0.55–0.60 bits/char — to be confirmed empirically.
+
+**Baselines (record comparison):** Huggingface `roneneldan/TinyStories-1M/3M/8M/28M` graded under this
+exact sampler (temp 0.7, k=3, EOS-stop, same prompts). PyTorch used only as an external yardstick, never
+in Psi. Establishes what param-count the 2023 recipe needed vs. ours.
+
+**Reproducibility:** completions are binary-specific (`-march=native -ffast-math`), so each
+`models/<name>/` archives the exact `psi_stories.exe` that produced its `eval.txt`.

@@ -28,6 +28,7 @@ then crush the *bits* with ternary (~1.58-bit) weights on our own kernel.
 | **Step 1** tensor autograd (the engine everything builds on) | ✅ done, 12/12 ops grad-checked ~1e-12 | `src/step1_tensor_autograd/tensor.hpp` |
 | **Step 2** psi-nano (char-level GPT, the prototype) | ✅ trains, generates fluent corpus English | `src/step2_psi_nano/` (`main.cpp`, `model.hpp`, `nn.hpp`) |
 | **Step 3** GPU kernels (Metal) | ✅ matmul **parity-class with MLX** (99% on key shape) + a **novel ternary GEMM** (16× smaller weights, full speed) | `src/step3_metal/`, writeup `docs/GPU_KERNELS.md` |
+| **Step 4** CUDA backend (NVIDIA) | ✅ same 4-fn interface on **H100/V100** — cuBLAS + hand-written kernel, both validated; training **bit-identical to CPU**, ~10× faster. Runs on **UCF Newton** HPC | `src/step4_cuda/`, writeup `docs/CUDA_BACKEND.md` |
 | **psi-stories** modern sub-1M model | ✅ built, trains/saves/loads/generates; all techniques grad-checked | `src/step2_psi_nano/stories.cpp` + `model_stories.hpp` |
 | **Capability bar** (the eval) | ✅ prompts + rubric; an LLM grades | `eval/tinystories_prompts.txt`, `docs/EVAL.md` |
 | **First training run** | ⚠️ done but **memory-capped** (see below) | `docs/OVERNIGHT_REPORT.md`, `models/` |

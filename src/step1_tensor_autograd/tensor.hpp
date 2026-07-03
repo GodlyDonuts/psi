@@ -30,7 +30,7 @@
 #include <unordered_set>
 #include <vector>
 
-#include "../step3_metal/metal_backend.h"   // GPU matmul backend (used only in the float build)
+#include "../gpu_backend.h"   // GPU matmul backend (Metal or CUDA; used only in the float build)
 
 namespace psi {
 
@@ -137,16 +137,16 @@ inline void parallel_rows(int rows, long work, F f) {
 template <class T>
 inline bool gpu_matmul_fwd(const T* a, const T* b, T* c, int m, int k, int n, long work) {
     if constexpr (std::is_same<T, float>::value) {
-        if (metal_available() && work >= (1L << 20)) { metal_matmul(a, b, c, m, k, n); return true; }
+        if (gpu_available() && work >= (1L << 20)) { gpu_matmul(a, b, c, m, k, n); return true; }
     }
     return false;
 }
 template <class T>
 inline bool gpu_matmul_bwd(const T* dc, const T* a, const T* b, T* da, T* db, int m, int k, int n, long work) {
     if constexpr (std::is_same<T, float>::value) {
-        if (metal_available() && work >= (1L << 20)) {
-            metal_matmul_nt(dc, b, da, m, k, n);   // dA += dC @ B^T
-            metal_matmul_tn(a, dc, db, k, n, m);   // dB += A^T @ dC
+        if (gpu_available() && work >= (1L << 20)) {
+            gpu_matmul_nt(dc, b, da, m, k, n);   // dA += dC @ B^T
+            gpu_matmul_tn(a, dc, db, k, n, m);   // dB += A^T @ dC
             return true;
         }
     }

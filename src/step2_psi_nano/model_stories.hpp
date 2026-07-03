@@ -99,9 +99,11 @@ struct ModernGPT {
     }
 };
 
-// Autoregressive sampler for ModernGPT, decoding via a string (BPE) vocab.
+// Autoregressive sampler for ModernGPT, decoding via a string (BPE) vocab. Stops early when it samples
+// `eos_stop` (the end-of-story token) — so a graded completion is one story, not multi-story spew.
 inline std::string generate(ModernGPT& model, std::vector<int> ctx, int n_new,
-                            real temp, std::mt19937& rng, const std::vector<std::string>& id2str) {
+                            real temp, std::mt19937& rng, const std::vector<std::string>& id2str,
+                            int eos_stop = -1) {
     int V = model.cfg.vocab, block = model.cfg.block;
     std::string out;
     for (int s = 0; s < n_new; ++s) {
@@ -117,6 +119,7 @@ inline std::string generate(ModernGPT& model, std::vector<int> ctx, int n_new,
         for (int j = 0; j < V; ++j) probs[j] /= Z;
         std::discrete_distribution<int> dist(probs.begin(), probs.end());
         int next = dist(rng);
+        if (next == eos_stop) break;               // end of story — stop cleanly (don't emit the marker)
         ctx.push_back(next);
         out += id2str[next];
     }

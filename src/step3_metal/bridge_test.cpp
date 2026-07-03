@@ -16,7 +16,7 @@
 
 int main() {
     using namespace psi;
-    std::printf("metal_available: %s\n", metal_available() ? "yes" : "no");
+    std::printf("gpu_available: %s\n", gpu_available() ? "yes" : "no");
 
     const int M = 128, K = 96, N = 64;  // deliberately non-divisible, to exercise bounds handling
     std::vector<float> A(M * K), B(K * N), C(M * N), Cref(M * N);
@@ -25,7 +25,7 @@ int main() {
     for (auto& x : A) x = d(r);
     for (auto& x : B) x = d(r);
 
-    metal_matmul(A.data(), B.data(), C.data(), M, K, N);   // <- C++ calling the GPU
+    gpu_matmul(A.data(), B.data(), C.data(), M, K, N);   // <- C++ calling the GPU
 
     for (int i = 0; i < M; ++i)
         for (int j = 0; j < N; ++j) {

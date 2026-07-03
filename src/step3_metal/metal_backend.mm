@@ -116,9 +116,9 @@ static id<MTLBuffer> bufIn(const float* p, long n) { return [gDev newBufferWithB
 
 namespace psi {
 
-bool metal_available() { ensure_init(); return gOk; }
+bool gpu_available() { ensure_init(); return gOk; }
 
-void metal_matmul(const float* A, const float* B, float* C, int M, int K, int N) {
+void gpu_matmul(const float* A, const float* B, float* C, int M, int K, int N) {
     ensure_init();
     if (!gOk) {
         for (int i = 0; i < M; ++i) for (int j = 0; j < N; ++j) { float a = 0; for (int k = 0; k < K; ++k) a += A[i * K + k] * B[k * N + j]; C[i * N + j] = a; }
@@ -132,7 +132,7 @@ void metal_matmul(const float* A, const float* B, float* C, int M, int K, int N)
     }
 }
 
-void metal_matmul_nt(const float* P, const float* Q, float* R, int rows, int cols, int contract) {
+void gpu_matmul_nt(const float* P, const float* Q, float* R, int rows, int cols, int contract) {
     ensure_init();
     if (!gOk) {
         for (int r = 0; r < rows; ++r) for (int c = 0; c < cols; ++c) { float a = 0; for (int i = 0; i < contract; ++i) a += P[r * contract + i] * Q[c * contract + i]; R[r * cols + c] += a; }
@@ -145,7 +145,7 @@ void metal_matmul_nt(const float* P, const float* Q, float* R, int rows, int col
     }
 }
 
-void metal_matmul_tn(const float* P, const float* Q, float* R, int rows, int cols, int contract) {
+void gpu_matmul_tn(const float* P, const float* Q, float* R, int rows, int cols, int contract) {
     ensure_init();
     if (!gOk) {
         for (int r = 0; r < rows; ++r) for (int c = 0; c < cols; ++c) { float a = 0; for (int i = 0; i < contract; ++i) a += P[i * rows + r] * Q[i * cols + c]; R[r * cols + c] += a; }

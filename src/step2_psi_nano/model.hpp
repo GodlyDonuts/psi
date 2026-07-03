@@ -129,6 +129,20 @@ struct AdamW {
     }
 };
 
+// Global-norm gradient clipping: scale ALL param grads by max_norm/||g|| when the global L2 norm
+// exceeds max_norm. Returns the pre-clip norm (log it — a spiking norm is the earliest warning of a
+// diverging long run). Call after backward, before opt.step. No effect on the grad-check oracle.
+inline real clip_grad_global_norm(std::vector<Tensor>& params, real max_norm) {
+    real sq = 0;
+    for (auto& p : params) { for (real g : p.grad()) sq += g * g; }
+    real norm = std::sqrt(sq);
+    if (norm > max_norm && norm > 0) {
+        real s = max_norm / norm;
+        for (auto& p : params) { for (auto& g : p.grad()) g *= s; }
+    }
+    return norm;
+}
+
 // Autoregressive sampling. Feeds the last `block` tokens, samples the next from a
 // temperature-scaled softmax of the final-position logits.
 inline std::string generate(GPT& model, std::vector<int> ctx, int n_new,
