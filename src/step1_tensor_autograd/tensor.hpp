@@ -22,6 +22,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <cstdlib>
 #include <functional>
 #include <memory>
 #include <random>
@@ -109,7 +110,10 @@ inline Tensor make_out(std::vector<int> shape, const char* op, std::vector<NodeP
 // thread spawn (small matmuls — e.g. psi-nano's — stay serial). f(r0,r1) must write only rows
 // in [r0,r1), so partitions are race-free and the result is identical to the serial version.
 inline int psi_threads() {
-    static int n = [] { unsigned h = std::thread::hardware_concurrency(); return h ? (int)h : 1; }();
+    static int n = [] {
+        if (const char* e = std::getenv("PSI_THREADS")) { int v = std::atoi(e); if (v > 0) return v; }  // cap (e.g. login nodes with a low RLIMIT_NPROC)
+        unsigned h = std::thread::hardware_concurrency(); return h ? (int)h : 1;
+    }();
     return n;
 }
 template <class F>
