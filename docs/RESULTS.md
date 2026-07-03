@@ -36,11 +36,14 @@ Prior psi: nano_130k (131K, ctx64, undertrained) = 5/3/2/2 (does not clear).
 Bar = legal-move depth on self-generated games ([tools/chess/chess_eval.py](../tools/chess/chess_eval.py)):
 mean consecutive legal plies from opening prompts. Data: 400K Lichess games (≥1500 Elo, UCI).
 
-| model | params | steps | final val | mean legal plies | first-move legal % | tier |
+| model | params | steps | final train | mean legal plies | first-move legal % | tier |
 |---|---:|---:|---:|---:|---:|---|
-| chess_nano | 178,656 | 12000 | _running_ | — | — | — |
-| chess_small | 459,648 | 15000 | _running_ | — | — | — |
+| chess_nano | 178,656 | 12000 ✓ | 1.34 | 0.1 | 8.3% | ❌ too small (degenerates) |
+| chess_small | 459,648 | 15000 | _running (51%: clean legal-ish UCI already)_ | — | — | — |
 | chess_mid | 1,304,256 | 18000 | _running_ | — | — | — |
+
+_chess_nano is the smallest-fails floor. chess_small at half-training already plays well-formed,
+mostly-legal openings — the record lands at chess_small/chess_mid._
 
 ## Next
 
