@@ -12,10 +12,19 @@ Loss→grade calibration is the campaign's key output. `val` = held-out CE. Bar 
 |---|---:|---:|---:|---:|---|---|---|---|---|
 | femto | 115,008 | 512 | 14000 ✓ | 2.11 | 6 | 3 | 3 | 2 | ❌ (floor) |
 | nano | 215,520 | 512 | 16000 ✓ | 1.87 | 7 | 5 | 4 | 4 | ❌ (close on grammar) |
-| small | 353,952 | 512 | 20000 | _running_ | — | — | — | — | — |
+| **small** | **353,952** | 512 | 20000 ✓ | **1.72** | **8** | **6** | **6** | **5** | ⚠️ borderline — **= TinyStories-1M at 1/3 params** |
 | mid | 574,336 | 1024 | 25000 ✓ | 2.03 | 8 | 6 | 6 | 5 | ⚠️ borderline |
-| flagship | 918,656 | 1024 | 26000 | _running_ | — | — | — | — | — |
-| insurance | 1,209,760 | 1024 | 26000 | _running_ | — | — | — | — | — |
+| flagship | 918,656 | 1024 | ~46% | cancelled | — | — | — | — | (killed to free GPUs) |
+| insurance | 1,209,760 | 1024 | ~41% | cancelled | — | — | — | — | (killed to free GPUs) |
+
+**Verdict:** the sweep's headline is **`small` (354K) matching TinyStories-1M's 8/6/6/5 at 1/3 the
+parameters** — a genuine capability-per-param result (the point of the campaign). The clean ladder
+(femto→nano→small) shows quality rising with size; the vocab-512 configs beat vocab-1024 per-param at this
+scale (embedding table cost). Honest limit: **no sub-1M config *cleanly clears* the ≥7/7/7 bar** — all top
+out ~6/6 on coherence/consistency, same borderline zone as TinyStories-1M itself. Cleanly clearing the bar
+looks to need >1M params (flagship/insurance, cancelled) or a longer/curated-data run + ternary for the
+bits record. This is the crown-jewel of the custom no-PyTorch stack; broad capability moves to the PyTorch
+100M track.
 
 ### Baselines (HF TinyStories, graded under the identical v2 protocol, models/baselines/)
 
