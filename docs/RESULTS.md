@@ -13,7 +13,7 @@ Loss→grade calibration is the campaign's key output. `val` = held-out CE. Bar 
 | femto | 115,008 | 512 | 14000 ✓ | 2.11 | 6 | 3 | 3 | 2 | ❌ (floor) |
 | nano | 215,520 | 512 | 16000 ✓ | 1.87 | 7 | 5 | 4 | 4 | ❌ (close on grammar) |
 | small | 353,952 | 512 | 20000 | _running_ | — | — | — | — | — |
-| mid | 574,336 | 1024 | 25000 | _running_ | — | — | — | — | — |
+| mid | 574,336 | 1024 | 25000 ✓ | 2.03 | 8 | 6 | 6 | 5 | ⚠️ borderline |
 | flagship | 918,656 | 1024 | 26000 | _running_ | — | — | — | — | — |
 | insurance | 1,209,760 | 1024 | 26000 | _running_ | — | — | — | — | — |
 

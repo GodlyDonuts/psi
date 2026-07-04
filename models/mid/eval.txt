@@ -1,0 +1,244 @@
+=== prompt 1 / completion 0 (temp=0.70 seed=100) ===
+Once upon a time, there was a little girl named Lily. She found a shiny red ball in the park. She wanted to play with it, so she  ┃>>>┃   took it as a photo of the ball. She put the ball on the grass and pointed it with her favorite toy, a big skeleton.
+Lily's mom came in and saw the skeleton and asked, "What is that?" Lily said, "It's an aeroplane," Her mom smiled and said, "Not no, it's a big bin. Do you want to play with me?"
+Lily nodded and started to play with the big, red ball. She pushed it, and it went into the bin. Her mom got the big bin and gave it to Lily. They both laughed and played with the big ball. Then, they played with the ball every day at the park.
+
+=== prompt 1 / completion 1 (temp=0.70 seed=101) ===
+Once upon a time, there was a little girl named Lily. She found a shiny red ball in the park. She wanted to play with it, so she  ┃>>>┃   took it home to show her mom. Her mom told her that the red ball was very important.
+Lily went to the park with her mom. She put the red ball on the ground and dried it all around. Her mom warned her to be careful. The sun was shining, and the sky was blue. Lily loved her red ball because it was so sparkly.
+When her mom got to play with the blue ball, Lily played with it all day. She was very happy. But then, something unexpected happened. The blue ball turned into a big, scary shrinch! It was a big red ball! Lily was very surprised. She did not know what to do.
+Lily and her mom found the big red ball and played with it all day. They had so much fun playing with the ball and the spark. The moral of the story is to always be careful with yourself and not to play with things that feel bad in yourself.
+
+=== prompt 1 / completion 2 (temp=0.70 seed=102) ===
+Once upon a time, there was a little girl named Lily. She found a shiny red ball in the park. She wanted to play with it, so she  ┃>>>┃   ran to the park to show her mom. When she opened the ball, she found a cool red ball inside.
+Lily took the cool ball to her mom, who was very happy. Her mom said, "Lily, come see the cool-looking ball!" Lily looked at the cool-talk and smiled. "I like it!" she said. "Me too," she said.
+Just then, a big wind came and blew the cool ball away. Lily and her mom chased the cool ball until Lily was so surprised. She wanted to see the cool ball with her big red ball, but the other prize was too high. Then, the cool ball hidden in the cool way. The cool ball was free and happy.
+
+=== prompt 2 / completion 0 (temp=0.70 seed=100) ===
+Tom had a big dog named Max. One sunny day, they went to the park to play. Max saw a cat and  ┃>>>┃   wanted to play with the cat. He ran to the cat and barked. The cat did not like Max. It was not good. It was messy.
+Max felt sorry for not playing. He wanted to play with the cat. He hit the cat with his mouth and ran away. The cat stopped and ran away. Tom was sad and did not want to play anymore.
+
+=== prompt 2 / completion 1 (temp=0.70 seed=101) ===
+Tom had a big dog named Max. One sunny day, they went to the park to play. Max saw a cat and  ┃>>>┃   wanted to play. Today, Tom went to the cat and said, "I want to play too!" Max was scared and ran away.
+Later, a big dog came and took the cat away. Tom was sad and cried. The dog did not want to play anymore. The cat wanted to play with Tom. Tom was sad and asked the dog to stay away from them. The dog did not want to play anymore.
+The dog saw Tom and wanted to play. It ran to the cat and ran away. Tom and the cat were sad. They didn't know how to play together anymore. They played together and had fun. The cat was not scared anymore. They were not scared anymore.
+
+=== prompt 2 / completion 2 (temp=0.70 seed=102) ===
+Tom had a big dog named Max. One sunny day, they went to the park to play. Max saw a cat and  ┃>>>┃   said, "Let's play a game. We can two and catch." Max was excited and said, "Yes, let's go!"
+They turned the cat, and it was warm and happy. The cat did not come back. Tom and Max ran and snatched. They found a ball and ran to find the ball. They saw the ball and ran to get it. They were surprised.
+They turned around and saw a big pile of balls. The pile was bouncing on the pile. It jumped on the ball and started to chase the ball. They ran and threw the ball, and the ball went away. They were happy they could play a fun game.
+
+=== prompt 3 / completion 0 (temp=0.70 seed=100) ===
+There was a little boy named Ben. Ben was very hungry. He went to the kitchen to find some food. He opened the fridge and  ┃>>>┃   saw a big bowl of jelly on the table. Ben was very happy and ran to show his mom.
+"Mom, what is that jelly now?" Ben asked.
+"I don't know," Mom said. "But you're scared, but you must be polite. It looks like it seems to bring you a special bowl," Ben said.
+He went to the kitchen and saw a big fish. The fish was almost eating the sweet bowl. Ben was scared, but he agreed. He gave the fish some food and said he had to find some food for him.
+Ben looked for an apple and saw a big fish. He was curious and wanted to see if he could find the apple. He reached for the fish and found it in the water. "This is a good jellyfish!" he said.
+Ben ran to the fish and put the apple in the fridge. It was a surprisef with a bow and a big smile. They both ate the sweet tasty bowl and made it taste. They were so happy that they
+
+=== prompt 3 / completion 1 (temp=0.70 seed=101) ===
+There was a little boy named Ben. Ben was very hungry. He went to the kitchen to find some food. He opened the fridge and  ┃>>>┃   saw many apples. He wanted to eat some of his fruit, but his mom told him not to eat.
+Ben wanted to eat his fruit, but his mom said no. Ben had to be careful. Then he asked his mom to give him a big hug. His mom said, "But we have to eat your fruits and eat it." Ben was scared, but he listened to his mom.
+But when he got to the kitchen, he saw his little brother Tom. He was not happy. He had eaten his fruits and his mom said, "Ben, you have to eat your fruits for you." Ben was sad, but he listened to his mom.
+
+=== prompt 3 / completion 2 (temp=0.70 seed=102) ===
+There was a little boy named Ben. Ben was very hungry. He went to the kitchen to find some food. He opened the fridge and  ┃>>>┃   saw a big motorcycle at the top. Ben was very curious. He asked his mom, "Did you see the motorcycle?"
+His mom smiled and said, "Yes, I demand you. As you have to eat it, it will be nice. But you must not share or solve. We will give it back to the kitchen and ask for a special print."
+Ben was so happy and he hugged him. He knew that his mom had a good day at the kitchen. He took a bite and made a message. He demanded that the cool avocado was smooth and he had a bit delicious. He couldn't wait to eat them all.
+Ben was so happy that he didn't need to eat the motorcycle.
+
+=== prompt 4 / completion 0 (temp=0.70 seed=100) ===
+Lucy and her mom went to the store to buy some apples. When they got there, Lucy saw  ┃>>>┃   a big shadow in the store. She asked her mom, "Can I have the shadow?"
+Her mom said, "Yes, you can have the shadows for the shadow. It is so cool!"
+Orgos let's buy the shadows and said, "Yuck! It looks like a bow!"
+So, Lucy and her mom buyed the shadows and daddys. They were very excited to go on the shadow.
+On the shadows of the store first, they also found the shadows and the shadows in the sand and dance it around them. The shadows were so proud and proud!
+And they never forget to buy the shadows at the store. They were so excited to have the shadows to eat.
+
+=== prompt 4 / completion 1 (temp=0.70 seed=101) ===
+Lucy and her mom went to the store to buy some apples. When they got there, Lucy saw  ┃>>>┃   a big, soft velvet ball. She was so happy and excited.
+"Dad! That ball is so pretty!" said Lucy.
+Her mom smiled and said, "Yes, let's go see!"
+They walked to the store and found a big book. It was a special pond to share the yummy apples. They put all the apples in the pot and went home.
+But when they got to the store, they saw a big box. Inside the box, there was a toy bug on it. The toy bug said, "Hello, I am a magic bug. I can help you make a new friend," said the magic bug. The magic bug was happy and said, "Thank you, Lucy, for sharing the magic bug with me. I am a magic bug!"
+
+=== prompt 4 / completion 2 (temp=0.70 seed=102) ===
+Lucy and her mom went to the store to buy some apples. When they got there, Lucy saw  ┃>>>┃   a big price of apples, a picture, and a cookiebility. She was so excited to see what it was. 
+The cookie said, "Mom, look at this apple!" Her mom said, "Yes, I like apples! It is so spicy!" 
+The cookie said, "That is so beautiful! Let's share it." 
+Lucy and her mom paused and the apples fell down. They went to the store. In the store, they saw a big bag of apples, a cake and a bowl of apples. They were very round and yellow! Lucy and her mom went to see the apples. 
+The apples were very happy to be together. They said, "Thank you, Mom! I love apples!" 
+The apples decided to share their apples with the cookies! They ate and laughed and had a fun day. The apples turned into a big, delicious apple. 
+The apples was the best apple ever. They had a fun day at the store, and they had lots of fun.
+
+=== prompt 5 / completion 0 (temp=0.70 seed=100) ===
+One day, a small bird could not fly. It sat on the ground and felt sad. Then a kind girl came and  ┃>>>┃   asked, "Why are you sad?"
+The little bird said, "I want to fly to the big tree. I can fly up and play with you." The little bird wanted to help, so it flew down and said, "I will be your friend, the big bird!"
+The big bird flew down and took the big bird to the big tree. The small bird was happy and said, "Thank you, little bird!" The small bird flew up high and saw the big bird flying too.
+The big bird had a fun day flying and flying again. The little bird felt happy too. They played together all day and lived happily ever after.
+
+=== prompt 5 / completion 1 (temp=0.70 seed=101) ===
+One day, a small bird could not fly. It sat on the ground and felt sad. Then a kind girl came and  ┃>>>┃   saw the bird. The girl was sad and wanted to help the bird fly.
+The kind squirrel said, "Hello, little bird! I like your flavor. Can you help me make my flavor?" The girl looked at the flavor and said, "Yes, I can help you."
+The next day, the girl went to the cloud. Then, she saw a big bird. The bird was scared and flew down to fly too. The bird saw the bird and flew to the bird. The bird said, "Don't worry, little bird. I will help you." The bird gave the bird some food. The bird was happy and said, "Thank you, bird!" The bird and the bird became best friends.
+
+=== prompt 5 / completion 2 (temp=0.70 seed=102) ===
+One day, a small bird could not fly. It sat on the ground and felt sad. Then a kind girl came and  ┃>>>┃   said, "Why are you sad?"
+The kind bird told the bird, "I am sad because I have no friends." The kind bird wanted to help the bird, so it would not fly. The bird felt better because it was too big to fly high in the sky.
+The kind bird tried to help the fly. It flew very high and made the bird fly high in the sky. The sad bird could not fly. The bird was very sad. The bird and the kind bird could help the fly. The bird was happy again. Now, the kind bird and the bird could fly again.
+
+=== prompt 6 / completion 0 (temp=0.70 seed=100) ===
+Sara had a new toy car. It was red and fast. She wanted to show her friend, so she  ┃>>>┃   ran to her toy car. She saw her toy car and started to play with it. She was very happy.
+But then, her toy car stopped and looked at her car. It was very big, and had many attractive things. She cried and tired. She ran to her mom and said, "Mom, I'm sorry, mom. I didn't mean to make you happy. Come with your toy car."
+Her mom said, "It's okay, Sara. But I'm okay. But be careful, you will be more careful. The doctor is not looking."
+Sara nodded and went to her room. She put her toy car on her hand and went to bed. Her mom looked at her doctor and said, "Okay, we can offer your car."
+Sara opened the car and took her toy car for a brilliant ride. She was very happy. She thanked her mom and gave her a hug. From that day on, she always looked at her toy car.
+
+=== prompt 6 / completion 1 (temp=0.70 seed=101) ===
+Sara had a new toy car. It was red and fast. She wanted to show her friend, so she  ┃>>>┃   started to play. 
+She put on her blue shirt and went outside. But when she got there, she saw that it was not her car. She had to go home, and she started to cry. 
+Mom cried and said, "Lila, please go home. We will go back outside."
+They started to walk home and held the car. Then, she saw a kite. She shook her head.
+"Look, mom, I found a kite!" Sara said.
+The kite flew down and said, "It's a kite today, and I have a kite to play with."
+"I like your kite!" Mom said.
+They both laughed and said, "No!" They went outside and saw a big tree. They ran and hit the kite with the kite in its mouth. They were very happy.
+But then, they saw a big dog in the park. The dog wanted to play with them. He ran to the kite and barked. He stepped on the dog and fell down.
+"Goodbye, Mom!" he said.
+She ran after the dog and took his kite back to the kitchen. The dog was happy
+
+=== prompt 6 / completion 2 (temp=0.70 seed=102) ===
+Sara had a new toy car. It was red and fast. She wanted to show her friend, so she  ┃>>>┃   asked her mom if they could play with it. Her mom said yes, and Sara went to the park to play. She ran very fast and jumped on the swings and her tiny car.
+But then, she heard a loud noise outside. It was a big monkey with a cord. The monkey was bossy, trying to take away his toy. It had a big smile on his face. It was a strong man. He said hello to the monkey, but he did not have a bathroom. He just shouted at the monkey and the monkey barked.
+Sara and her mom were very sad. They didn't want to play with the monkey anymore. They asked the monkey if they could play with them. The monkey said no, and Sara smiled at the monkey! The monkey was happy and said, "You are a good friend."
+The moral of this story is that it is not always believe in yourself.
+
+=== prompt 7 / completion 0 (temp=0.70 seed=100) ===
+Once there was a tiny mouse who lived in a hole. One cold night, the mouse went out to look for  ┃>>>┃   food. He saw a big shell that was very bright. 
+The mouse was very curious about the shell. He wanted to see what was in the shell. He started to throw the shells to the shells and watched them made it perfect. 
+The mouse couldn't wait to see the shells and take a closer look. Suddenly, the shells sparkled in the shells. 
+The mouse was persistent and tried to get the shells off. He covered the shells with dirt and went on a long walk. He was feeling very happy and he loved being able to go outside. 
+When it was time to go home, he reached the shell and saw all the shells he had seen. He was happy he was able to make a new shells in the shell. 
+The mouse was so happy and he smiled and said goodbye. This time, the shells kept his shells and became a magic shell.
+
+=== prompt 7 / completion 1 (temp=0.70 seed=101) ===
+Once there was a tiny mouse who lived in a hole. One cold night, the mouse went out to look for  ┃>>>┃   something special in. He saw a big tree.
+The mouse was so excited and asked if he could explore it. The mouse said yes, but the mouse said, "No, it's not safe."
+The mouse looked up, but he couldn't find the tree. He was too small and he thought of a plan. He knew he shouldn't go inside the mouse and had to resist.
+The mouse started to feel scared. He wanted to go home. But the mouse was too small and he never heard him. The mouse kept walking, and the mouse was safe. The mouse was scared, but he resisted and said he had to stay away from the mouse again.
+The mouse was no longer a bit deaf, but he still missed the mouse and the mouse kept walking. The mouse was happy and the mouse was no longer feeling brave.
+
+=== prompt 7 / completion 2 (temp=0.70 seed=102) ===
+Once there was a tiny mouse who lived in a hole. One cold night, the mouse went out to look for  ┃>>>┃   something to do. He looked in the grass, the bees and the trees in the sun. The mouse was so glad to have a rub.
+The mouse was so excited to try and see what was inside. It was a little bit of night, and the mouse was surprised to see it. The mouse showed the mouse how to climb the tree and said, "Wow! That's a naughty bit!"
+The mouse was so happy that this bit something strange. The mouse told the mouse’s a secret that was someone else in the busy night. The mouse and the mouse were surprised and played with the mouse in the grass. The mouse had a great time at the hole and the mouse was very excited.
+
+=== prompt 8 / completion 0 (temp=0.70 seed=100) ===
+Jack went to the beach with his dad. They built a big sandcastle. Suddenly, a big wave  ┃>>>┃   came and it was a bike.
+"Hello, little Give it to you!" said Jack.
+"Hello, Give it back!" said the bike.
+Jack was very surprised but happy to Gived the bike.
+"What do you think it is?" Jack asked.
+Jack nodded and said, "I'm Give back the bike to Giant".
+Jack was so excited to Giant. He pulled the bike up the bike and started to argue.
+"Let's go!" Look at the bike and their mom smiled too.
+"OK, Jack. But it's time to go home" Jack said.
+Jack listened and ran off to Giant. He had a lot of fun and he was very happy. He thanked his mom and said, "Great! You can go get some food for our bike."
+
+=== prompt 8 / completion 1 (temp=0.70 seed=101) ===
+Jack went to the beach with his dad. They built a big sandcastle. Suddenly, a big wave  ┃>>>┃   came from their own. It was full of laughter and make their family smile. Jack was very surprised. He wanted to show it to his dad, but he was too small to reach.
+His dad said, "I say, but be careful. There is a big oasis in the oasis!"
+Jack was scared. He wanted to help his dad. But his dad said, "You're too small!" Jack was sad that his dad could not reach the oasis, but he did not give up.
+Jack was very sad. He wanted to help his dad. He wanted to be worth the oasis. He tried and tried, but the oasis was too fast. Jack was very sad. He wanted to help his dad, but first, he could not reach the oasis and play with his dad.
+
+=== prompt 8 / completion 2 (temp=0.70 seed=102) ===
+Jack went to the beach with his dad. They built a big sandcastle. Suddenly, a big wave  ┃>>>┃   came and blew the sand. Jack tried to stop, but it was too big. He pulled and pulled, but the waves were too big and heavy.
+Jack's dad said, "Stop! That waves are scary. I want to help you get the sandcastle. Now you will need it."
+Jack was so excited. He pushed the waves with the waves. He wanted to help the wave. In the end, he had a wand.
+Jack was so excited! He said, "Thank you, Miss Dad. You are a good and try to help!"
+
+=== prompt 9 / completion 0 (temp=0.70 seed=100) ===
+The little duck wanted to swim in the pond, but the pond was full of ice. The duck was sad because  ┃>>>┃   it had no money to swim.
+The duck, the duck, saw the duck walking along the pond. The duck said, "It's okay, swimmy."
+The ducks pushed the duck away from the pond. The ducks were scared. The ducks laughed and said, "Don't worry, I won't swim too!"
+Mom and the ducks played together in the pond, and the ducks was all wet. The ducks were happy, and they flew together in the pond.
+
+=== prompt 9 / completion 1 (temp=0.70 seed=101) ===
+The little duck wanted to swim in the pond, but the pond was full of ice. The duck was sad because  ┃>>>┃   it couldn't disturb the other ducks. 
+The duck asked if it would be as a team. The duck said, "It's too duck, it might be scary. Maybe it might be ugly." 
+The duck did not listen to the duck. She thought of a plan to help the duck. They went on a search. They looked around for the duck, but they couldn't see the duck. 
+They both climbed on the swamp and began to disturb the duck. The duck was very big and duckly. The duck was so happy to see the duckling too. They all had a great day with the duckly.
+
+=== prompt 9 / completion 2 (temp=0.70 seed=102) ===
+The little duck wanted to swim in the pond, but the pond was full of ice. The duck was sad because  ┃>>>┃   it had no friends. The duck wanted to be brave and not be scared.
+The duck thought of a plan to help the pond. He had a big bag of yummy pieces for the duck to swim with. The duck said, "I will get them to the pond. You can get some pieces. You can't wait."
+The duck thought for a moment. The duck said, "If you don't believe it's okay, I will keep you safe." The duck and the duck went on to play. The duck was happy, and the duck was safe. They all had fun on the pond. And the duck was very brave, and the duck was not scary anymore.
+
+=== prompt 10 / completion 0 (temp=0.70 seed=100) ===
+Mia found a magic box under her bed. When she opened it, a  ┃>>>┃   funny fairy came in. Mia was so happy and wagged her tail. She put her toys in the box and saw the fairy in the bed.
+"What are you doing?" Mia asked.
+ 
+"I want to eat it," she said. "Come to the fairy that fairy."
+The fairy looked at the fairy. It was green and had a big smile.
+"That's a magic fairy," Mia asked.
+Every day, Mia and her mom sat down out of the bed and watched the fairy together. They looked at the fairy and smiled.
+Suddenly, the fairy popped bit a big piece of wine and gave it a look.
+Mia was so happy she had found a magical piece of wine and she said "sting to our pieces".
+
+=== prompt 10 / completion 1 (temp=0.70 seed=101) ===
+Mia found a magic box under her bed. When she opened it, a  ┃>>>┃   little boy opened a box and said, "What is in your bed, Mia?"
+Mia looked around and saw a big, friendly bear. She said, "Hi, bear! What do I do?"
+The bear smiled and said, "It's a special cold, Mia. I feel happy and happy. Do you want to show me?"
+Mia smiled and said, "Yes, please!"
+The bear gave Mia a big smile. Mia was happy too. She said, "Thank you, bear!"
+The bear and Mia played all day. They laughed and laughed. They had lots of fun.
+But then, something unexpected happened. The bear started to laugh. It was not a toy, it was a toy! It was a magic bear! It could make people laugh and play with it. Mia and the bear became friends.
+
+=== prompt 10 / completion 2 (temp=0.70 seed=102) ===
+Mia found a magic box under her bed. When she opened it, a  ┃>>>┃   little girl named Lily saw the magic box. Lily was curious and wanted to know what was inside the box. She opened it and saw many toys and treats and logs. Mia wanted to know what was inside the box.
+Mia and Tom walked together to find the magic box. They found in a big room and gently picked up the special box of toys. They played with their toys and had lots of fun. But then, a ghost came to them. It was a big bear! The bear was very sad and angry.
+Mia and Tom were not happy. They started to cry. But the bear was not happy, they weren't lost anymore. They looked at the bear and said, "We did what the bear does not open. We can play together." They were very surprised.
+A big bird came and looked at them. The bird was so happy. It flew away and Mia and Tom were sad. He did not have any more toys to play with. Then they found out that they were not the big bear, but it danced around the room.
+
+=== prompt 11 / completion 0 (temp=0.70 seed=100) ===
+Tim and his sister were playing in the garden. They saw a butterfly with pretty wings. They tried to  ┃>>>┃   jump on it, but it was too high and too high. The butterfly was too strong and strong.
+"Hey, stop!" Tim said, reassuring the butter. He had an idea! He finally climbed the butterfly and fell to the ground. He could get the butterfly back.
+"Help!" the butterfly replied. "It's too high. My sister was very strong. Who"
+Tim said, "I'm helping it! I didn't care. I don't want it."
+Suddenly, the butterfly flew away and Tim looked at it again. He knew what to do. He said, "Don't worry, I will help you." He jumped up and grabbed the butterfly.
+Suddenly, the butterfly flew away and Tim was very sad. He couldn't get the butterfly back. He could not see it anymore.
+The butterfly said he couldn't help but he was able to fly away from the butterfly. And he was still sad, and the butterfly was over, and he was happy again.
+
+=== prompt 11 / completion 1 (temp=0.70 seed=101) ===
+Tim and his sister were playing in the garden. They saw a butterfly with pretty wings. They tried to  ┃>>>┃   get closer, but it was too high. They tried to get closer to each other, but they couldn't.
+"Let's go back there!" Tim said. "It will be a real butterfly."
+The butterfly flew to Tim and pulled him out of the butter. It was empty, but Tim grabbed the butterfly. He said, "No, the butterfly is too fast. We have to run away."
+The butterfly flew away. Tim and his sister heard a loud noise. They looked around and saw a big filled with red wings. They were very surprised.
+"That's my wing!" Tim said. "Roar!"
+The butterfly was so happy. It turned in a big pile of leaves. Tim and his sister were so happy. They thanked the butterfly and went home. They both enjoyed the butterfly.
+
+=== prompt 11 / completion 2 (temp=0.70 seed=102) ===
+Tim and his sister were playing in the garden. They saw a butterfly with pretty wings. They tried to  ┃>>>┃   catch it, but it was too high up in a tree. Tim and his sister made a loud noise.
+"What happened?" Tim asked.
+"I don't know," said her sister. "Maybe it's a flower," his sister said.
+"I don't know, Tim," Tim said.
+They were careful not to get hurt. Mom had to stay quiet. She ran to the garden and touched it with the sister. "Be careful, Tim!" she said.
+"No, bad! It hurts!" she said. "It can help you."
+But Tim did not listen. He kept trying to get hurt. He fell down and hurt his sister. He did not have time to hurt. He felt ashamed at the spoon.
+Later, Tim's sister came into the room. She saw the spoiled flower. She saw Tim and the sister sister. She wanted to see what was in the spoon. She succeeded and cried out. She smiled and said, "Don't worry, I will help you." The spoiled Just then, a big wind came and blew the spoiled flower.
+
+=== prompt 12 / completion 0 (temp=0.70 seed=100) ===
+There was a dog who lost his favorite bone. He looked everywhere for it. Finally, he  ┃>>>┃   found it under a big tree. He was so happy and excited. 
+The dog had a fun idea. He ran to the tree and asked his mom if he could go. His mom said, "Yes, you can come and play with me."
+The dog won the race. It was so much fun! He was so happy to have it. They ran as fast as they could, and the dog kept playing.
+When the sun went down, the dog ran very fast. The dog was going to find a new bone! It was a big, yummy bone, and some hay milk. The dog was so happy and thanked the dog for his help. They all played together and became best friends.
+
+=== prompt 12 / completion 1 (temp=0.70 seed=101) ===
+There was a dog who lost his favorite bone. He looked everywhere for it. Finally, he  ┃>>>┃   found his bones and he was very sad. He looked in the bright sun all around his room, but it was not there. He looked under the bed, behind the bone, and in the bed. He was so sad that he could not find his bone.
+Then, he heard a voice coming from the garden. He stopped and looked out the window. He saw a big hole in the ground. It was a big hole in the ground. The dog was so happy! It jumped into the hole and laughed. It was the fun day in the hole.
+
+=== prompt 12 / completion 2 (temp=0.70 seed=102) ===
+There was a dog who lost his favorite bone. He looked everywhere for it. Finally, he  ┃>>>┃   found it anywhere. He was so happy that he could find it anywhere.
+He looked in the garden, beside the bone. He was so happy! He ran to the bone and showed it to his friends. The family was very happy to see it. They all agreed and they all ran to disappear to keep it safe.
+When they got home, the family and the dog were very happy. They hugged each other and had a great time. They were very proud but couldn't wait to go back to the bone.
+
