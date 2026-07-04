@@ -1,6 +1,6 @@
-// shape_bench.mm — measure our winning GPU matmul kernel on the shapes the MODEL actually runs,
+// shape_bench.mm - measure our winning GPU matmul kernel on the shapes the MODEL actually runs,
 // not just big squares. The lesson from benchmarking against MLX/PyTorch: square-2048 fp32 is a
-// vanity number. A transformer's matmuls are fat-M / thin-K-N — (batch*seq, d) x (d, d_ff) — and
+// vanity number. A transformer's matmuls are fat-M / thin-K-N - (batch*seq, d) x (d, d_ff) - and
 // those live in a different performance regime. This runs the multi-simdgroup tiled-MMA kernel
 // (the autotuner's winner, BK=16) across a set of (M,K,N) shapes, validates bit-exact vs a parallel
 // CPU reference, and reports GFLOP/s + % of the M1's ~2.6 TFLOP fp32 peak.

@@ -1,16 +1,16 @@
-// value.hpp — scalar reverse-mode automatic differentiation, from scratch.
+// value.hpp - scalar reverse-mode automatic differentiation, from scratch.
 //
 // This is Step 0 of the Psi custom stack. The whole point is to internalize how
 // backprop actually works before we ever touch tensors or kernels. A `Value` is a
 // single scalar in a computation graph. Every arithmetic op builds a new node and
 // records a tiny closure ("backward_fn") that knows how to push gradient from the
-// op's output back to its inputs — the local chain rule. Calling `.backward()` on a
+// op's output back to its inputs - the local chain rule. Calling `.backward()` on a
 // final scalar walks the graph in reverse and fills in d(output)/d(node) for every
 // node. That's all reverse-mode autodiff is.
 //
 // Design note on memory: the graph is owned top-down via shared_ptr (each node holds
 // shared_ptr to its parents). The backward closures capture *raw* pointers, never the
-// shared_ptr of their own output node — capturing the output's shared_ptr would form a
+// shared_ptr of their own output node - capturing the output's shared_ptr would form a
 // cycle (node -> closure -> node) and leak. While backward() runs, the root Value keeps
 // the entire DAG alive, so the raw pointers are valid for the whole pass.
 
@@ -39,7 +39,7 @@ struct Node {
 using NodePtr = std::shared_ptr<Node>;
 
 // A value-semantics handle around a Node. Copying a Value shares the same underlying
-// node (the graph is shared, not duplicated) — so parameters reused across the network
+// node (the graph is shared, not duplicated) - so parameters reused across the network
 // all refer to one node, and updating one updates all references.
 class Value {
 public:

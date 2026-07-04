@@ -1,4 +1,4 @@
-// mma_autotune.mm — parametrized tiled-MMA matmul autotuner. Searches the real GEMM design space to
+// mma_autotune.mm - parametrized tiled-MMA matmul autotuner. Searches the real GEMM design space to
 // match/beat MLX (~55-74% of M1 peak) on the shapes the model runs. One kernel, parametrized by
 // (BM,BN,BK,SGY,SGX) injected as #defines; the host compiles every config, validates it bit-exact vs
 // a parallel CPU ref, times best-of-N, and reports the winner per shape.

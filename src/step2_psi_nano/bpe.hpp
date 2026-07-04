@@ -1,7 +1,7 @@
-// bpe.hpp — a SMALL byte-pair-encoding tokenizer, for sub-1M models.
+// bpe.hpp - a SMALL byte-pair-encoding tokenizer, for sub-1M models.
 //
 // At sub-1M params the embedding table (vocab x d) dominates the budget, so the usual ~32k vocab is
-// impossible — it would *be* the whole model. This learns a small vocab (~512-1024) of word-pieces:
+// impossible - it would *be* the whole model. This learns a small vocab (~512-1024) of word-pieces:
 // enough that each token carries more than a character (capability-per-param), cheap enough to leave
 // the parameter budget for actual transformer layers. Same fit/encode/decode/vocab interface as
 // CharTokenizer, plus id2str for multi-char decode.
@@ -72,7 +72,7 @@ struct BPETokenizer {
         id2str.clear(); base_id.clear(); rank_.clear(); merged_.clear();
         for (char c : text) { std::string s(1, c); if (!base_id.count(s)) { base_id[s] = (int)id2str.size(); id2str.push_back(s); } }
         // Reserve a dedicated EOS id right after the base chars (before any merge). It is NOT in base_id,
-        // so encode() never produces it from text — it's injected only at <|endoftext|> story boundaries.
+        // so encode() never produces it from text - it's injected only at <|endoftext|> story boundaries.
         eos = (int)id2str.size(); id2str.push_back(EOS_STR);
 
         // Count words WITHOUT letting the literal "<|endoftext|>" separator become BPE vocabulary:
@@ -92,7 +92,7 @@ struct BPETokenizer {
                 for (size_t j = 0; j + 1 < w.size(); ++j) pc[key(w[j], w[j + 1])] += f;
             }
             if (pc.empty()) break;
-            // Deterministic argmax: highest count, ties broken by SMALLEST key — so an identical corpus
+            // Deterministic argmax: highest count, ties broken by SMALLEST key - so an identical corpus
             // yields an identical tokenizer regardless of hash-map iteration order (libstdc++ vs libc++).
             int64_t best = -1; long bc = 0;
             for (auto& kv : pc) if (kv.second > bc || (kv.second == bc && kv.first < best)) { bc = kv.second; best = kv.first; }
@@ -133,7 +133,7 @@ struct BPETokenizer {
         return out;
     }
     // Encode a full corpus WITH in-band EOS: encode each story, join with the eos id between stories.
-    // This is the training/eval tokenization — the model learns story boundaries as a real token.
+    // This is the training/eval tokenization - the model learns story boundaries as a real token.
     std::vector<int> encode_stream(const std::string& text) const {
         std::vector<int> out;
         auto chunks = split_on_eos(text);

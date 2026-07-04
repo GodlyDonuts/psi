@@ -1,7 +1,7 @@
-// checkpoint.hpp — save/load a trained model as a self-contained artifact.
+// checkpoint.hpp - save/load a trained model as a self-contained artifact.
 //
-// So each zoo model (psi-stories, psi-chess, …) is a file you can ship and run without
-// retraining. Format: magic "PSI1", Config (5 ints), tokenizer vocab, then every parameter's
+// So a trained model is a file you can ship and run without retraining.
+// Format: magic "PSI1", Config (5 ints), tokenizer vocab, then every parameter's
 // raw `real` data in GPT::params() order (deterministic, so save/load line up).
 
 #pragma once

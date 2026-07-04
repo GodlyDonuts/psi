@@ -1,7 +1,7 @@
-// data.hpp — data pipeline: read a corpus, hold out a validation split, measure val loss.
+// data.hpp - data pipeline: read a corpus, hold out a validation split, measure val loss.
 //
 // The held-out eval is the point: it's what tells us the model is *generalizing* rather than
-// *memorizing* — psi-nano's current blind spot. A real generalization win needs scale (kernels),
+// *memorizing* - psi-nano's current blind spot. A real generalization win needs scale (kernels),
 // but the machinery to measure it lives here.
 
 #pragma once
@@ -35,7 +35,7 @@ struct Dataset {
     }
 };
 
-// Mean cross-entropy over strided windows of `data` (no backward — pure evaluation).
+// Mean cross-entropy over strided windows of `data` (no backward - pure evaluation).
 // Templated on the model type so both GPT (psi-nano) and ModernGPT (psi-stories) use it.
 template <class M>
 inline double eval_loss(M& model, const std::vector<int>& data, int block, int max_windows = 64) {

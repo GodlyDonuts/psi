@@ -1,7 +1,7 @@
-// stories.cpp — psi-stories: the sub-1M TinyStories model. Same autograd / ops / GPT as psi-nano,
+// stories.cpp - psi-stories: the sub-1M TinyStories model. Same autograd / ops / GPT as psi-nano,
 // but with the small-BPE tokenizer (bpe.hpp) so the tiny parameter budget goes to the transformer,
 // not to spelling. Goal: the smallest model (params, then bits) that clears the TinyStories bar
-// (docs/EVAL.md) — smartest-per-param. This is the record-campaign build (docs/RECORD_CAMPAIGN.md).
+// (docs/EVAL.md) - smartest-per-param. This is the record-campaign build (docs/RECORD_CAMPAIGN.md).
 //
 //   stories tokenize <data> <vocab> <out_prefix>              fit BPE once -> out_prefix.tok + out_prefix.ids
 //   stories train    <data> <steps> [vocab d layers block hidden heads n_kv n_unique] [flags]
@@ -29,7 +29,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
-#include <sys/resource.h>   // getrusage — peak RSS, the long-run memory-growth canary
+#include <sys/resource.h>   // getrusage - peak RSS, the long-run memory-growth canary
 
 #include "bpe.hpp"
 #include "data.hpp"
@@ -209,7 +209,7 @@ static int cmd_train(const std::string& datafile, int steps, int vocab, int d, i
     if (!o.resume.empty()) { opt.m = std::move(resume_m); opt.v = std::move(resume_v); opt.t = resume_t; }
 
     // --- story-boundary-aware sampling: window starts snap to story beginnings (pos 0 or right after eos),
-    //     so a training sequence is one story from position 0 — matching how generation runs. ---
+    //     so a training sequence is one story from position 0 - matching how generation runs. ---
     std::vector<int> starts;
     int eos = tok.eos_id();
     for (int i = 0; i + block + 1 <= (int)ds.train.size(); ++i)
@@ -242,7 +242,7 @@ static int cmd_train(const std::string& datafile, int steps, int vocab, int d, i
             lsum += l.data()[0];
         }
         if (!std::isfinite(lsum)) {                                 // NaN/Inf guard: stop rather than burn hours on garbage
-            std::fprintf(stderr, "FATAL: non-finite loss %.4g at step %d — stopping (last checkpoint: %s)\n", (double)lsum, step, o.out.c_str());
+            std::fprintf(stderr, "FATAL: non-finite loss %.4g at step %d - stopping (last checkpoint: %s)\n", (double)lsum, step, o.out.c_str());
             return 2;
         }
         real gnorm = clip_grad_global_norm(opt.p, o.clip);
@@ -252,7 +252,7 @@ static int cmd_train(const std::string& datafile, int steps, int vocab, int d, i
             double vl = (step % 1000 == 0) ? eval_loss(model, val, block, 64) : -1.0;
             double el = std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - t0).count();
             if (vl >= 0) std::printf("step %6d   train %.4f   val %.4f   |g|=%.2f  rss=%.0fMB  (%.1fs)\n", step, lsum, vl, gnorm, peak_rss_mb(), el);
-            else         std::printf("step %6d   train %.4f   val   —    |g|=%.2f  rss=%.0fMB  (%.1fs)\n", step, lsum, gnorm, peak_rss_mb(), el);
+            else         std::printf("step %6d   train %.4f   val   -    |g|=%.2f  rss=%.0fMB  (%.1fs)\n", step, lsum, gnorm, peak_rss_mb(), el);
             std::fflush(stdout);
         }
         done = step + 1;
@@ -279,7 +279,7 @@ static int cmd_eval(const std::string& path, const std::string& promptsfile, rea
         std::vector<int> ctx = tok.encode(line);
         if (ctx.empty()) ctx.push_back(0);
         for (int c = 0; c < k; ++c) {
-            std::mt19937 rng(seed + c);                            // fixed seed per completion — reproducible grading
+            std::mt19937 rng(seed + c);                            // fixed seed per completion - reproducible grading
             std::string comp = generate(model, ctx, nnew, temp, rng, tok.id2str, tok.eos_id());
             std::printf("=== prompt %d / completion %d (temp=%.2f seed=%d) ===\n%s  ┃>>>┃  %s\n\n", idx, c, (double)temp, seed + c, line.c_str(), comp.c_str());
         }

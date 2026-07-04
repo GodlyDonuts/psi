@@ -1,7 +1,7 @@
-// model.hpp — psi-nano: a tiny GPT, plus an AdamW optimizer and a sampler.
+// model.hpp - psi-nano: a tiny GPT, plus an AdamW optimizer and a sampler.
 //
 // Single-head causal self-attention, pre-norm RMSNorm, GELU MLP, tied input/output
-// embeddings. Built entirely from the Step 1 tensor autograd + Step 2 ops — no PyTorch.
+// embeddings. Built entirely from the Step 1 tensor autograd + Step 2 ops - no PyTorch.
 // Correctness-first CPU reference (the Mac prototype); kernels/precision come later.
 
 #pragma once
@@ -30,7 +30,7 @@ struct Block {
 
 struct GPT {
     Config cfg;
-    Tensor tok_emb;          // [V,d] — tied with the output projection
+    Tensor tok_emb;          // [V,d] - tied with the output projection
     Tensor pos_emb;          // [block,d]
     Tensor final_g;          // [d]
     std::vector<Block> blocks;
@@ -130,7 +130,7 @@ struct AdamW {
 };
 
 // Global-norm gradient clipping: scale ALL param grads by max_norm/||g|| when the global L2 norm
-// exceeds max_norm. Returns the pre-clip norm (log it — a spiking norm is the earliest warning of a
+// exceeds max_norm. Returns the pre-clip norm (log it - a spiking norm is the earliest warning of a
 // diverging long run). Call after backward, before opt.step. No effect on the grad-check oracle.
 inline real clip_grad_global_norm(std::vector<Tensor>& params, real max_norm) {
     real sq = 0;
@@ -169,7 +169,7 @@ inline std::string generate(GPT& model, std::vector<int> ctx, int n_new,
     return out;
 }
 
-// Same sampler, but decodes via a string vocab (multi-char tokens) — for the BPE psi-stories model.
+// Same sampler, but decodes via a string vocab (multi-char tokens) - for the BPE psi-stories model.
 inline std::string generate(GPT& model, std::vector<int> ctx, int n_new,
                             real temp, std::mt19937& rng,
                             const std::vector<std::string>& id2str) {

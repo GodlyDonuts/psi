@@ -1,12 +1,12 @@
-// main.cpp — Psi training-framework CLI (psi-nano, the first zoo model).
+// main.cpp - psi-nano CLI: a tiny char-level GPT, the prototype the TinyStories model grew out of.
 //
 //   psi_nano train [datafile] [steps]   train (file or embedded corpus), report train+val loss,
 //                                        save psi_model.bin, print samples
 //   psi_nano gen   <model.bin> [prompt]  load a checkpoint and generate from a prompt
 //   psi_nano chat  [model.bin]           interactive prompt (loads a model, or trains embedded first)
 //
-// The split into config / tokenizer / data / checkpoint is what turns the old hardcoded script
-// into a reusable framework: same code trains psi-stories, psi-chess, … — just different data.
+// The split into config / tokenizer / data / checkpoint is what let the same code go on to train
+// psi-stories: point it at different data and a different config.
 
 #include <cctype>
 #include <chrono>
@@ -24,7 +24,7 @@
 
 using namespace psi;
 
-// Embedded fallback corpus (used when no data file is given) — keeps `train` working anywhere.
+// Embedded fallback corpus (used when no data file is given) - keeps `train` working anywhere.
 static const std::string CORPUS =
     "psi is a small language model. it learns to predict the next character in a "
     "sequence. the model is built from scratch with a custom autograd engine. every "
@@ -114,7 +114,7 @@ static int cmd_gen(const std::string& path, const std::string& prompt) {
 }
 
 // Capability eval: generate a completion for each story-opening prompt (see docs/EVAL.md).
-// The completions are graded by a strong model against the rubric — this is the bar that
+// The completions are graded by a strong model against the rubric - this is the bar that
 // the capability-per-bit search shrinks against.
 static int cmd_eval(const std::string& path, const std::string& promptsfile, real temp) {
     std::mt19937 rng(0);

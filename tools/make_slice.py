@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# make_slice.py — build the shared training slice for the TinyStories record campaign.
+# make_slice.py - build the shared training slice for the TinyStories record campaign.
 #
 # Cuts a target-size slice from TinyStoriesV2-GPT4-train, on <|endoftext|> story boundaries, with:
 #   - exact story-level dedup (drops repeated stories),

@@ -1,8 +1,8 @@
-// main.cpp — Step 0 driver.
+// main.cpp - Step 0 driver.
 //
 // Two things prove the autograd engine works:
 //   1) grad_check(): compare analytic gradients (from backward()) against numerical
-//      finite-difference gradients. This is our permanent correctness net — every
+//      finite-difference gradients. This is our permanent correctness net - every
 //      future op gets one of these before we trust it.
 //   2) train_xor(): build a small MLP out of Value scalars and train it on XOR with
 //      plain SGD. If loss falls and predictions match, the forward+backward+update
@@ -22,7 +22,7 @@ using psi::vpow;
 // 1) Finite-difference gradient check.
 // ---------------------------------------------------------------------------
 static void grad_check() {
-    // f(a,b,c) = (a*b + tanh(c))^2  — exercises *, +, tanh, and pow together.
+    // f(a,b,c) = (a*b + tanh(c))^2  - exercises *, +, tanh, and pow together.
     auto f = [](const Value& a, const Value& b, const Value& c) {
         return vpow(a * b + vtanh(c), 2.0);
     };

@@ -1,4 +1,4 @@
-// ternary_fp16.mm — ternary-weight GEMM v2: fp16 activations + ternary weights, fp32 accumulate.
+// ternary_fp16.mm - ternary-weight GEMM v2: fp16 activations + ternary weights, fp32 accumulate.
 //
 // v0/v1 (ternary_gemm.mm) proved correctness + 16x weight compression, but ran at fp32 speed because
 // the kernel is bound by the fp32 MMA units. The model's real regime is LOW-BIT everywhere, so here we

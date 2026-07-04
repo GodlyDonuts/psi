@@ -1,8 +1,8 @@
-// bridge_test.cpp — proves the pure-C++ → Metal bridge works and is correct.
+// bridge_test.cpp - proves the pure-C++ → Metal bridge works and is correct.
 //
 // Pure C++ (no Obj-C here): includes metal_backend.h, calls metal_matmul on a non-square,
 // non-power-of-2 matrix, and checks bit-exactness vs a CPU reference. This is the keystone for
-// wiring Metal into the autograd — if C++ can call the GPU correctly, the integration is sound.
+// wiring Metal into the autograd - if C++ can call the GPU correctly, the integration is sound.
 //
 // Build: clang++ -std=c++17 -O2 bridge_test.cpp metal_backend.mm \
 //                -framework Metal -framework Foundation -o bridge_test

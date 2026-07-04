@@ -1,4 +1,4 @@
-// autograd_gpu_test.cpp — validates the Metal-backed autograd matmul (forward + both backward passes)
+// autograd_gpu_test.cpp - validates the Metal-backed autograd matmul (forward + both backward passes)
 // bit-close vs a CPU float reference. Built float (-DPSI_REAL=float) so the GPU path is active.
 // Uses non-divisible dims (200x150x176) so the tiled kernels' bounds handling is exercised in all
 // three flavors (NN forward, NT for dA, TN for dB). Work = 200*150*176 = 5.28M >= 2^20 -> GPU.

@@ -1,87 +1,49 @@
-# Psi — Project Charter
+# Psi, Project Charter
 
 _Last updated: 2026-06-16_
 
 ## One line
 
-Build a state-of-the-art Small Language Model — as small as possible while as intelligent as
-possible — on a fully custom training stack, as a personal challenge to master the field and
-produce something genuinely novel.
+Build a small language model, as small as possible while as capable as possible, on a training stack I write from scratch. It's a personal challenge to learn the field by building it, and to produce something novel along the way.
 
-## The point (true-north)
+## Why I'm doing this
 
-What would make this a success **even if the final model were only mediocre**:
+What would make this a success even if the final model were only mediocre:
 
-1. **Master the full stack** — first-principles understanding of autograd, kernels, training
-   dynamics, and scaling.
-2. **Produce something novel** — a new kernel / architecture / training idea worth sharing, not a
-   reproduction.
-3. **The challenge & craft** — building it end-to-end, the hard way, on purpose.
+I want a first-principles understanding of autograd, kernels, training dynamics, and scaling, the kind you only get from writing them yourself. I want to produce something original: a new kernel or architecture or training idea worth sharing, not a reproduction of a paper. And I want the craft of building the whole thing end-to-end, the hard way, on purpose.
 
-Deliberately **rejected** as a goal: building a lasting, reusable, general-purpose framework. We do
-not pay the abstraction tax. We specialize, hard-code, and discard freely. The codebase is a sharp
-instrument aimed at one model, not a mini-PyTorch.
+One thing I've deliberately rejected as a goal: building a lasting, reusable, general-purpose framework. I don't pay the abstraction tax. I specialize, hard-code, and throw code away freely. The codebase is a sharp instrument aimed at one model, not a mini-PyTorch.
 
-## Honest framing of "SoTA"
+## What "SoTA" means here
 
-A solo builder cannot out-token the frontier labs (leading sub-2B models see multiple trillions of
-tokens). So "SoTA" here does **not** mean beating everyone on every benchmark. It means one of:
+A solo builder can't out-token the frontier labs; leading sub-2B models see multiple trillions of tokens. So I don't mean beating everyone on every benchmark. I mean pushing the Pareto frontier of quality-per-parameter and quality-per-training-FLOP at my compute class, which is measurable, defensible, and directly helped by the custom kernels.
 
-- **SoTA-for-our-compute-class** — push the Pareto frontier of quality-per-parameter and
-  quality-per-training-FLOP. Measurable, defensible, and directly helped by our custom kernels.
-- **Domain specialty** — genuinely beat much larger models on one vertical.
-
-Primary success metric: **depth and originality**. Secondary: the Pareto numbers above.
+The metric I actually care about is depth and originality. The Pareto numbers are secondary.
 
 ## Constraints
 
-- **Fully custom stack** — our own autograd engine, runtime, and compute kernels. No PyTorch / HF
-  Trainer for the core path.
-- **Compute trajectory**
-  - *Now:* Apple Silicon (M-series) — Metal / MLX dev loop.
-  - *Scale:* NVIDIA GH200 (Grace Hopper) — CUDA with TMA, `wgmma`, FP8, FlashAttention-3,
-    NVLink-C2C coherent memory.
-  - *Later:* AWS GPU cluster — multi-node.
-  - The design must split cleanly into the Apple dev loop and the Hopper/cluster scale-up, with
-    kernels written to port across.
+The stack is fully custom: my own autograd engine, runtime, and compute kernels. No PyTorch or HF Trainer on the core path.
+
+Compute trajectory: development happens on Apple Silicon (M-series) through a Metal/MLX loop, and scale-up targets NVIDIA GPUs with CUDA. The design has to split cleanly between the Apple dev loop and the GPU scale-up, with kernels written to port across both.
 
 ## Working agreement
 
-Mode: **I (the assistant) implement; you steer and learn.** With these rules, so it serves mastery
-and craft rather than producing a black box:
+I implement; the point is to keep it serving mastery and craft rather than producing a black box.
 
-- **Nothing is a black box.** Every nontrivial piece is a readable, first-principles reference with
-  the reasoning and math exposed inline. If a library one-liner would hide something worth
-  understanding, we write it out longhand.
-- **You steer every real decision.** Forks are surfaced with a recommendation; you make the call.
-- **Novelty is first-class.** We actively hunt for places to do something original (most likely in
-  the kernels, possibly the training method) and flag "conventional way vs riskier original idea."
-- **Standing offer:** any signature piece you'd rather hand-write yourself (autograd core, a key
-  kernel), say so and the assistant scaffolds around it instead.
+Nothing is a black box. Every nontrivial piece is a readable, first-principles reference with the reasoning and math exposed inline. If a library one-liner would hide something worth understanding, I write it out longhand.
 
-## Open decisions
+Novelty is first-class. I actively hunt for places to do something original, most likely in the kernels, possibly in the training method.
 
-- **Target capability** — what the model should be good at. Candidates:
-  1. General-purpose, push the quality-per-param Pareto.
-  2. Domain specialist (e.g. code, math, a structured task) — most realistic path to a true "SoTA"
-     claim.
-  3. Reasoning-focused tiny model (distillation / RL on traces).
-  To be decided once the research-backed design doc lands.
-
-## Build philosophy — always-working incremental path
+## Build philosophy: always-working incremental path
 
 Never a big-bang framework. Each step produces something that runs end-to-end:
 
-1. **Scalar autograd** (micrograd-class) — reverse-mode autodiff from scratch.
-2. **Tensor autograd** — n-dimensional arrays, broadcasting, the ops a transformer needs.
-3. **Naive GPT training loop** — a small model trains and loss goes down, correctness first.
-4. **Real fused kernels** — attention, GEMM, fused norm+residual, fused optimizer, fused
-   cross-entropy. Apple/Metal first, ported to Hopper CUDA.
-5. **Scale-up** — multi-device, larger token budgets, the over-trained small regime.
+1. Scalar autograd (micrograd-class): reverse-mode autodiff from scratch.
+2. Tensor autograd: n-dimensional arrays, broadcasting, the ops a transformer needs.
+3. Naive GPT training loop: a small model trains and loss goes down, correctness first.
+4. Real fused kernels: attention, GEMM, fused norm+residual, fused optimizer, fused cross-entropy. Apple/Metal first, ported to CUDA.
+5. Scale-up: larger token budgets, the over-trained small regime.
 
-## Status / next
+## Status
 
-- Charter committed (this document).
-- Research landscape sweep running → produces `docs/DESIGN.md` (architecture, data, training,
-  compression, reasoning, custom stack, kernels, eval, phased roadmap, target numbers).
-- After the design doc: decide target capability, then begin step 1 of the build.
+The custom stack is built and training real models. The current family is femto (115K), nano (215K), small (354K), and mid (574K), all trained from scratch on TinyStories. See RESULTS for the numbers.

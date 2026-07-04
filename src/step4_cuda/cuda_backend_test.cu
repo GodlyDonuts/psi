@@ -1,4 +1,4 @@
-// cuda_backend_test.cu — correctness + benchmark harness for the CUDA GPU backend.
+// cuda_backend_test.cu - correctness + benchmark harness for the CUDA GPU backend.
 //
 // Validates all three ops (forward write, both backward ACCUMULATES) against a double-precision CPU
 // reference on deliberately non-power-of-2 shapes, then benchmarks end-to-end throughput. The engine
@@ -50,7 +50,7 @@ int main() {
     using namespace psi;
     const char* eng = std::getenv("PSI_CUDA_KERNEL"); if (!eng) eng = "cublas";
     std::printf("=== CUDA backend test  (engine=%s, gpu_available=%s) ===\n", eng, gpu_available() ? "yes" : "no");
-    if (!gpu_available()) { std::printf("no GPU visible — aborting\n"); return 2; }
+    if (!gpu_available()) { std::printf("no GPU visible - aborting\n"); return 2; }
 
     std::mt19937 rng(1234);
     int shapes[][3] = {{128,96,64},{200,200,200},{512,384,1024},{37,101,53},{1,512,768},{256,256,257}};

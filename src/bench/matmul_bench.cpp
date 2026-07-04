@@ -1,4 +1,4 @@
-// matmul_bench.cpp — the optimization scoreboard.
+// matmul_bench.cpp - the optimization scoreboard.
 //
 // matmul dominates the cost of the whole stack, so we measure it directly: time
 // forward + backward of a sizable matmul and report GFLOP/s. Every speed optimization

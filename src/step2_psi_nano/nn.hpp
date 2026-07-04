@@ -1,4 +1,4 @@
-// nn.hpp — the transformer op set, built on the Step 1 tensor autograd engine.
+// nn.hpp - the transformer op set, built on the Step 1 tensor autograd engine.
 //
 // Step 2 of the Psi stack. These are the ops a GPT needs beyond Step 1's
 // matmul/add_bias/mul/sub/tanh/mean. Every op records its local backward and is
@@ -16,7 +16,7 @@
 
 namespace psi {
 
-// Elementwise add (same shape) — residual connections and additive masks.
+// Elementwise add (same shape) - residual connections and additive masks.
 inline Tensor add(const Tensor& A, const Tensor& B) {
     assert(A.shape() == B.shape());
     Tensor out = make_out(A.shape(), "add", {A.node, B.node});

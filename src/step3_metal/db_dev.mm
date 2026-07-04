@@ -1,4 +1,4 @@
-// db_dev.mm — kernel-design dev harness for the multi-simdgroup MMA matmul. Head-to-head, all
+// db_dev.mm - kernel-design dev harness for the multi-simdgroup MMA matmul. Head-to-head, all
 // validated bit-exact vs a parallel CPU ref, best-of-N, on the shapes the model runs. Chasing MLX
 // parity (~55-74% of M1 peak) on the laggards (mlp-up, square-1024).
 //

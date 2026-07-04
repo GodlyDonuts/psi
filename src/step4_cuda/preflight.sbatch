@@ -15,7 +15,7 @@ cat > /tmp/probe_$$.cu <<'EOF'
 #include <cuda_runtime.h>
 int main(){void*p;if(cudaMalloc(&p,1<<20)){printf("BUSY\n");return 1;}printf("OK\n");return 0;}
 EOF
-nvcc -o /tmp/probe_$$ /tmp/probe_$$.cu 2>/dev/null && /tmp/probe_$$ | grep -q OK || { echo "GPU BUSY — resubmit"; exit 1; }
+nvcc -o /tmp/probe_$$ /tmp/probe_$$.cu 2>/dev/null && /tmp/probe_$$ | grep -q OK || { echo "GPU BUSY - resubmit"; exit 1; }
 
 echo; echo "########## 1. BUILD ##########"
 bash src/step4_cuda/build_cuda.sh || { echo BUILD_FAIL; exit 1; }

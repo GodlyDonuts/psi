@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# build_cuda.sh — build the NVIDIA/CUDA training path (peer to the Metal build in run_overnight.sh).
+# build_cuda.sh - build the NVIDIA/CUDA training path (peer to the Metal build in run_overnight.sh).
 #
 # Same custom autograd + model; only the GPU backend differs (cuda_backend.cu instead of
 # metal_backend.mm). Produces psi_stories_cuda (train/eval/gen) and cuda_backend_test (correctness+bench).

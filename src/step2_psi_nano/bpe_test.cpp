@@ -1,4 +1,4 @@
-// bpe_test.cpp — validate the small-BPE tokenizer: fit on a slice of TinyStories, report vocab +
+// bpe_test.cpp - validate the small-BPE tokenizer: fit on a slice of TinyStories, report vocab +
 // compression (chars/token) + a lossless round-trip, and show the longest learned word-pieces.
 // Light CPU job (fits on a few-MB slice). Build:
 //   clang++ -std=c++17 -O2 src/step2_psi_nano/bpe_test.cpp -o bpe_test && ./bpe_test

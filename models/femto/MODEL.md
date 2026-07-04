@@ -1,6 +1,6 @@
 # psi-stories / femto
 
-Sweep config in the sub-1M **capability-per-bit** TinyStories record campaign
+Sweep config in the sub-1M capability-per-bit TinyStories record campaign
 (see [docs/RECORD_CAMPAIGN.md](../../docs/RECORD_CAMPAIGN.md), [docs/EVAL.md](../../docs/EVAL.md)).
 
 | field | value |
@@ -9,10 +9,10 @@ Sweep config in the sub-1M **capability-per-bit** TinyStories record campaign
 | architecture (args) | `512 64 8 256 160 4 1 2` = vocab d layers block hidden heads n_kv n_unique |
 | training | 14000 steps · batch 32 · ctx 256 · AdamW lr=0.003 wd 0.01 · WSD · grad-clip 1.0 |
 | tokens seen | ~114688000 (997 tok/param) |
-| data | data/slice500.txt (500MB dedup, valid-excluded — see data/slice500.txt.manifest) |
+| data | data/slice500.txt (500MB dedup, valid-excluded, see data/slice500.txt.manifest) |
 | tokenizer | s512 (BPE, in-band EOS, boundary-aware sampling) |
 | code version | git `e8265f7` |
-| final | step  13900   train 1.7933   val   —    |g|=0.67  rss=1959MB  (36554.3s) |
+| final | step  13900   train 1.7933   val   n/a    |g|=0.67  rss=1959MB  (36554.3s) |
 
 ## Reproduce
 ```sh
@@ -24,10 +24,10 @@ module load cuda/cuda-12.6.0 && bash src/step4_cuda/build_cuda.sh
 
 ## Capability-bar grade (docs/EVAL.md v2 rubric, graded off-cluster)
 
-Final val CE **2.11** (vocab 512). Graded on 36 completions (12 prompts × 3):
-**Grammar 6 · Coherence 3 · Consistency 3 · Plot 2 · clears bar? ❌ NO**
+Final val CE 2.11 (vocab 512). Graded on 36 completions (12 prompts × 3):
+Grammar 6, Coherence 3, Consistency 3, Plot 2. Clears the bar? No.
 
-The **smallest stories config** and the record's lower floor. Phrase-level grammar is decent, but at 115K
-params it can't hold a thread — obsessive repetition ("the ball… the ball…") and non-sequiturs (Ben's
-fridge → "a big ball" → "a tree"). Better than the old nano_130k (5/3/2/2) at a smaller size and lower
-loss, but far from coherent. Coherence needs more capacity — the record lands in the bigger configs.
+This is my smallest stories config and the record's lower floor. Phrase-level grammar is decent,
+but at 115K params it can't hold a thread. It falls into obsessive repetition ("the ball... the ball...")
+and non-sequiturs (Ben's fridge becomes "a big ball" becomes "a tree"). It's far from coherent, and
+coherence needs more capacity. The record lands in the bigger configs.

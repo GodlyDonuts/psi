@@ -1,9 +1,9 @@
-// model_stories.hpp — ModernGPT: the psi-stories architecture, every capability-per-param technique
+// model_stories.hpp - ModernGPT: the psi-stories architecture, every capability-per-param technique
 // from docs/RESEARCH.md stacked, all on grad-checked ops:
-//   · multi-head attention with GROUPED-QUERY ATTENTION (GQA)   — fewer K/V params      [MobileLLM/DeepSeek]
-//   · ROTARY POSITION EMBEDDING (RoPE)                          — no pos-emb params      [RoFormer]
-//   · SwiGLU MLP                                                — better capability/param[GLU variants/MobileLLM]
-//   · BLOCK-WISE WEIGHT SHARING                                 — depth at ~0 param cost [MobileLLM]
+//   · multi-head attention with GROUPED-QUERY ATTENTION (GQA)   - fewer K/V params      [MobileLLM/DeepSeek]
+//   · ROTARY POSITION EMBEDDING (RoPE)                          - no pos-emb params      [RoFormer]
+//   · SwiGLU MLP                                                - better capability/param[GLU variants/MobileLLM]
+//   · BLOCK-WISE WEIGHT SHARING                                 - depth at ~0 param cost [MobileLLM]
 //   · RMSNorm (pre-norm) + tied input/output embeddings
 // Kept separate from model.hpp's GPT so psi-nano (the char demo) is unchanged. Reuses Config/AdamW.
 
@@ -22,7 +22,7 @@ namespace psi {
 // Config fields used: vocab, d_model, n_layers, block, hidden, n_heads, n_kv_heads, n_unique.
 //   n_kv_heads (0 ⇒ = n_heads, i.e. plain MHA);  n_unique (0 ⇒ = n_layers, i.e. no sharing).
 struct SBlock {
-    Tensor wq, wk, wv, wo;     // wq/wo: [d,d];  wk/wv: [d, n_kv*dh]  (GQA — smaller)
+    Tensor wq, wk, wv, wo;     // wq/wo: [d,d];  wk/wv: [d, n_kv*dh]  (GQA - smaller)
     Tensor attn_g, mlp_g;      // [d] RMSNorm gains
     Tensor w1, w3, w2;         // SwiGLU: w1,w3 [d,hidden]; w2 [hidden,d]
 };
@@ -30,7 +30,7 @@ struct SBlock {
 struct ModernGPT {
     Config cfg;
     int n_kv, n_uniq, dh, qpg;     // resolved: kv-heads, unique blocks, head dim, query-heads-per-kv
-    Tensor tok_emb;                // [V,d] — tied with output (no pos-emb: RoPE)
+    Tensor tok_emb;                // [V,d] - tied with output (no pos-emb: RoPE)
     Tensor final_g;                // [d]
     std::vector<SBlock> blocks;    // n_uniq unique blocks, cycled across n_layers
 
@@ -100,7 +100,7 @@ struct ModernGPT {
 };
 
 // Autoregressive sampler for ModernGPT, decoding via a string (BPE) vocab. Stops early when it samples
-// `eos_stop` (the end-of-story token) — so a graded completion is one story, not multi-story spew.
+// `eos_stop` (the end-of-story token) - so a graded completion is one story, not multi-story spew.
 inline std::string generate(ModernGPT& model, std::vector<int> ctx, int n_new,
                             real temp, std::mt19937& rng, const std::vector<std::string>& id2str,
                             int eos_stop = -1) {
@@ -119,7 +119,7 @@ inline std::string generate(ModernGPT& model, std::vector<int> ctx, int n_new,
         for (int j = 0; j < V; ++j) probs[j] /= Z;
         std::discrete_distribution<int> dist(probs.begin(), probs.end());
         int next = dist(rng);
-        if (next == eos_stop) break;               // end of story — stop cleanly (don't emit the marker)
+        if (next == eos_stop) break;               // end of story - stop cleanly (don't emit the marker)
         ctx.push_back(next);
         out += id2str[next];
     }

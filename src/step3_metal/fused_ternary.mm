@@ -1,4 +1,4 @@
-// fused_ternary.mm — DID activation fusion (matmul-epilogue act) pay off on M1? FINDING: NO, both ways.
+// fused_ternary.mm - DID activation fusion (matmul-epilogue act) pay off on M1? FINDING: NO, both ways.
 // Computes C = act(A @ W_ternary). We tried to fuse the activation into the matmul's epilogue two ways,
 // measured vs the UNFUSED two-pass (ternary matmul -> global, then a standalone elementwise act):
 //   (a) threadgroup scratch [64x64] then act+write  -> 0.80-0.84x (the 16KB scratch crushes the matmul's

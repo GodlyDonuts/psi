@@ -1,4 +1,4 @@
-// attention_metal.mm — fused single-head causal attention on the GPU (one Metal dispatch).
+// attention_metal.mm - fused single-head causal attention on the GPU (one Metal dispatch).
 //
 // Step 3, kernel #2. Computes O = softmax(QKᵀ·scale + causal_mask) @ V without ever writing the
 // T×T score matrix to global memory: each thread owns one query row and runs the FlashAttention

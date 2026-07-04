@@ -1,10 +1,10 @@
-// matmul_metal.mm — Metal GPU matmul + a tiling AUTOTUNER. C = A @ B.
+// matmul_metal.mm - Metal GPU matmul + a tiling AUTOTUNER. C = A @ B.
 //
-// Step 3. Same O(n^3) FLOPs everywhere — speed = hardware utilization. The register-tiled kernel
+// Step 3. Same O(n^3) FLOPs everywhere - speed = hardware utilization. The register-tiled kernel
 // is parameterized by (BM,BN,BK,TM,TN): each threadgroup computes a BM x BN block of C, each thread
-// a TM x TN micro-tile held in registers (raising arithmetic intensity — the real lever). The
+// a TM x TN micro-tile held in registers (raising arithmetic intensity - the real lever). The
 // autotuner compiles every candidate config, validates it bit-exact vs the CPU, benchmarks it, and
-// reports the best — so the right tiling is chosen on M1 / M4 / M5 without hand-guessing.
+// reports the best - so the right tiling is chosen on M1 / M4 / M5 without hand-guessing.
 //
 // Build: clang++ -x objective-c++ -fobjc-arc -O2 -std=c++17 matmul_metal.mm \
 //                -framework Metal -framework Foundation -o matmul_metal
@@ -21,7 +21,7 @@
 #include <thread>
 #include <vector>
 
-// Naive baseline (one thread per output) — reference point for the sweep.
+// Naive baseline (one thread per output) - reference point for the sweep.
 static const char* kNaive = R"(
 #include <metal_stdlib>
 using namespace metal;
@@ -154,7 +154,7 @@ kernel void mm(device const float* A [[buffer(0)]], device const float* B [[buff
     for (uint r = 0; r < 2; ++r) for (uint c = 0; c < 2; ++c) acc[r][c] = make_filled_simdgroup_matrix<float,8,8>(0.0f);
 
     for (uint k0 = 0; k0 < K; k0 += BK) {
-        // float4 vectorized cooperative loads (4 floats/instruction) — measured ~+50% vs scalar loads,
+        // float4 vectorized cooperative loads (4 floats/instruction) - measured ~+50% vs scalar loads,
         // same threadgroup memory so occupancy is unchanged. Requires K%4==0, N%4==0, BK%4==0.
         for (uint t = tid; t < 8 * BK; t += 128) { uint lin = t*4, r = lin/BK, c4 = lin%BK;   // As 32xBK
             *(threadgroup float4*)(As + r*BK + c4) = *(device const float4*)(A + (blockRow + r)*K + (k0 + c4)); }
@@ -193,7 +193,7 @@ int main(int argc, char** argv) {
         std::vector<float> A(M * K), B(K * N), Cref(M * N);
         for (auto& x : A) x = dist(rng);
         for (auto& x : B) x = dist(rng);
-        {   // parallel CPU reference (rows split across cores — fat-M shapes have 8192 rows)
+        {   // parallel CPU reference (rows split across cores - fat-M shapes have 8192 rows)
             unsigned nthreads = std::max(1u, std::thread::hardware_concurrency());
             std::vector<std::thread> pool;
             auto rows = [&](int r0, int r1) {

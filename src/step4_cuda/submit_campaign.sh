@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# submit_campaign.sh — launch the sub-1M TinyStories record sweep (bracket-and-extend).
+# submit_campaign.sh - launch the sub-1M TinyStories record sweep (bracket-and-extend).
 # Step counts are finalized from preflight timing (each job kept safely < its walltime). Long jobs go on
 # 'normal' (infinite walltime, no preemption). Record candidates + the insurance headline start first.
 #   bash src/step4_cuda/submit_campaign.sh          # submit all
 #   bash src/step4_cuda/submit_campaign.sh femto    # submit one by name
 set -euo pipefail
 cd "$HOME/Psi"
-[ -s data/s512.ids ] && [ -s data/s1024.ids ] || { echo "tokenize caches missing — run preflight first"; exit 1; }
+[ -s data/s512.ids ] && [ -s data/s1024.ids ] || { echo "tokenize caches missing - run preflight first"; exit 1; }
 
 # name        arch (vocab d layers blk hid heads kv uniq)   steps   lr      ids    partition  walltime
 # walltime caps = (steps × measured V100 s/step) + build/eval overhead + 15% margin; 'normal' is

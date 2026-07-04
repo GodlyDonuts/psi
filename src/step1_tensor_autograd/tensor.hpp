@@ -1,4 +1,4 @@
-// tensor.hpp — tensor-level reverse-mode autograd (CPU reference oracle).
+// tensor.hpp - tensor-level reverse-mode autograd (CPU reference oracle).
 //
 // Step 1 of the Psi stack. Same algorithm as Step 0 (record a local backward per op,
 // then walk the graph in reverse), but the *unit* is now an N-D array instead of a
@@ -11,7 +11,7 @@
 //   * We keep the shared_ptr node + std::function closure design from Step 0. At tensor
 //     granularity the node count is tiny (a handful per layer), so the allocation/
 //     refcount overhead that mattered for scalars is now negligible. The arena/tape/
-//     index optimization is therefore DEFERRED until a profile says otherwise — and the
+//     index optimization is therefore DEFERRED until a profile says otherwise - and the
 //     real cost will move into the kernels (Step 3), not the graph plumbing.
 //   * Data type is `double` so this stays a high-precision correctness oracle we can
 //     trust the tensor engine against. Low precision (bf16/fp8/ternary) is a kernel-layer
@@ -37,7 +37,7 @@ namespace psi {
 
 // `real` is the scalar type. Default `double` for the grad-check oracle (tight finite-diff);
 // build the training path with `-DPSI_REAL=float` for ~2× bandwidth/SIMD width. Kernels go lower
-// (bf16/fp8/ternary) later — this is just the CPU dtype knob.
+// (bf16/fp8/ternary) later - this is just the CPU dtype knob.
 #ifndef PSI_REAL
 #define PSI_REAL double
 #endif
@@ -79,7 +79,7 @@ public:
         t.node->data = std::move(data);
         return t;
     }
-    // Gaussian init with an explicit std — we pass a fan-in-scaled std at the call site
+    // Gaussian init with an explicit std - we pass a fan-in-scaled std at the call site
     // (Xavier/He), the lesson from the Step-0 math review.
     static Tensor randn(std::vector<int> shape, std::mt19937& rng, real stddev) {
         Tensor t(std::move(shape));
@@ -107,7 +107,7 @@ inline Tensor make_out(std::vector<int> shape, const char* op, std::vector<NodeP
 }
 
 // Split a row range [0,rows) across CPU threads when the work is large enough to amortize
-// thread spawn (small matmuls — e.g. psi-nano's — stay serial). f(r0,r1) must write only rows
+// thread spawn (small matmuls - e.g. psi-nano's - stay serial). f(r0,r1) must write only rows
 // in [r0,r1), so partitions are race-free and the result is identical to the serial version.
 inline int psi_threads() {
     static int n = [] {
@@ -135,7 +135,7 @@ inline void parallel_rows(int rows, long work, F f) {
 // Ops. Each computes the forward, then records the local backward.
 // ---------------------------------------------------------------------------
 
-// GPU dispatch helpers — templated so `if constexpr` genuinely discards the Metal calls in the
+// GPU dispatch helpers - templated so `if constexpr` genuinely discards the Metal calls in the
 // double (oracle) build (a non-template `if constexpr` would still type-check the dead branch).
 // Return true if the GPU handled the op.
 template <class T>

@@ -1,16 +1,16 @@
-// cuda_backend.cu — NVIDIA implementation of the gpu_backend.h interface (peer to metal_backend.mm).
+// cuda_backend.cu - NVIDIA implementation of the gpu_backend.h interface (peer to metal_backend.mm).
 //
 // Same four functions the autograd dispatches to (row-major, forward writes / backward accumulates).
 // Two GEMM engines behind one code path, chosen at runtime:
-//   PSI_CUDA_KERNEL=cublas   (default)  — cuBLAS SGEMM, the correctness/perf oracle
-//   PSI_CUDA_KERNEL=custom               — a hand-written tiled kernel (the number to beat)
-//   PSI_CUDA_CHECK=1                     — run BOTH every call and report max|cublas-custom|
+//   PSI_CUDA_KERNEL=cublas   (default)  - cuBLAS SGEMM, the correctness/perf oracle
+//   PSI_CUDA_KERNEL=custom               - a hand-written tiled kernel (the number to beat)
+//   PSI_CUDA_CHECK=1                     - run BOTH every call and report max|cublas-custom|
 //
 // Row-major ↔ cuBLAS (column-major): compute Cᵀ = op(B)ᵀ·op(A)ᵀ by swapping the operands, i.e.
 //   cublasSgemm(opB, opA, N, M, K, B, ldb, A, lda, C, N).   (derived + checked against the CPU oracle.)
 //
 // The autograd stores tensors in host memory, so each call is H2D→GEMM→D2H (like Metal, but Metal's
-// unified memory makes its copies free — on a discrete GPU these transfers are real and cap the speedup
+// unified memory makes its copies free - on a discrete GPU these transfers are real and cap the speedup
 // of tiny matmuls; the win grows with matmul size, and a resident-activation path is the next step).
 
 #include <cstdio>
@@ -27,7 +27,7 @@
 
 #define TILE 16
 
-// Non-fatal error reporting — a backend must never kill a training run; it warns and carries on.
+// Non-fatal error reporting - a backend must never kill a training run; it warns and carries on.
 #define CK(x) do{ cudaError_t e_=(x); if(e_) std::fprintf(stderr,"[cuda] %s @ %d: %s\n",#x,__LINE__,cudaGetErrorString(e_)); }while(0)
 #define CB(x) do{ cublasStatus_t s_=(x); if(s_) std::fprintf(stderr,"[cublas] %s @ %d: status %d\n",#x,__LINE__,(int)s_); }while(0)
 

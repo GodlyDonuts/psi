@@ -1,4 +1,4 @@
-// gradcheck.cpp — finite-difference validation of every transformer op in nn.hpp.
+// gradcheck.cpp - finite-difference validation of every transformer op in nn.hpp.
 // Each op must PASS here before psi-nano is allowed to use it.
 
 #include <cmath>

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# train_config.sbatch — train ONE sweep config into a reproducible models/<name>/ folder.
+# train_config.sbatch - train ONE sweep config into a reproducible models/<name>/ folder.
 #   sbatch [-p normal] [-t HH:MM:SS] train_config.sbatch <name> "<vocab d layers blk hid heads kv uniq>" <steps> <lr> <s512|s1024>
 # Collision-safe (per-config --out), self-building into a private dir (no .o races between concurrent
 # jobs), auto-resumes its own checkpoint on requeue/restart, archives the exact binary (completions are
@@ -25,7 +25,7 @@ cat > /tmp/pb_$SLURM_JOB_ID.cu <<'EOF'
 int main(){void*p;if(cudaMalloc(&p,1<<20)){return 1;}return 0;}
 EOF
 if ! ( nvcc -o /tmp/pb_$SLURM_JOB_ID /tmp/pb_$SLURM_JOB_ID.cu 2>/dev/null && /tmp/pb_$SLURM_JOB_ID ); then
-  echo "GPU busy/unavailable on $(hostname) — requeuing"; scontrol requeue "$SLURM_JOB_ID"; sleep 30; exit 1
+  echo "GPU busy/unavailable on $(hostname) - requeuing"; scontrol requeue "$SLURM_JOB_ID"; sleep 30; exit 1
 fi
 rm -f /tmp/pb_$SLURM_JOB_ID /tmp/pb_$SLURM_JOB_ID.cu
 
@@ -71,7 +71,7 @@ Sweep config in the sub-1M **capability-per-bit** TinyStories record campaign
 | architecture (args) | \`$ARCH\` = vocab d layers block hidden heads n_kv n_unique |
 | training | $STEPS steps · batch 32 · ctx 256 · AdamW lr=$LR wd 0.01 · WSD · grad-clip 1.0 |
 | tokens seen | ~$TOKS ($(python3 -c "print(f'{$TOKS/max(1,$PARAMS):.0f}')" 2>/dev/null || echo ?) tok/param) |
-| data | data/slice500.txt (500MB dedup, valid-excluded — see data/slice500.txt.manifest) |
+| data | data/slice500.txt (500MB dedup, valid-excluded - see data/slice500.txt.manifest) |
 | tokenizer | $IDS (BPE, in-band EOS, boundary-aware sampling) |
 | code version | git \`$GIT\` |
 | final | $LAST |
@@ -85,7 +85,7 @@ module load cuda/cuda-12.6.0 && bash src/step4_cuda/build_cuda.sh
 \`\`\`
 
 ## Capability-bar grade (docs/EVAL.md v2 rubric, graded off-cluster)
-_Filled after grading:_  Grammar — · Coherence — · Consistency — · Plot — · **clears bar? —**
+_Filled after grading:_  Grammar - · Coherence - · Consistency - · Plot - · **clears bar? -**
 EOF
 
 rm -rf "$BD"

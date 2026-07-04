@@ -1,4 +1,4 @@
-// metal_backend.mm — the C++ ↔ Metal bridge. Implements metal_backend.h.
+// metal_backend.mm - the C++ ↔ Metal bridge. Implements metal_backend.h.
 //
 // Lazily-initialized singleton (device + queue + three compiled pipelines: NN forward, NT/TN
 // backward). Each call copies inputs into shared (unified-memory) buffers, dispatches, copies the

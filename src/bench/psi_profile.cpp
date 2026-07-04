@@ -1,4 +1,4 @@
-// psi_profile.cpp — phase breakdown of a psi-nano training step.
+// psi_profile.cpp - phase breakdown of a psi-nano training step.
 //
 // Iters 4 & 6 showed psi-nano's time doesn't move with matmul size, so the cost is per-op
 // overhead, not GEMM. This splits a step into forward+loss / backward / optimizer to locate

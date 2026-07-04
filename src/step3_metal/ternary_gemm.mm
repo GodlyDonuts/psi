@@ -1,4 +1,4 @@
-// ternary_gemm.mm — Psi's OWN kernel: a ternary-weight matmul. C = A @ W, where W in {-1,0,+1}.
+// ternary_gemm.mm - Psi's OWN kernel: a ternary-weight matmul. C = A @ W, where W in {-1,0,+1}.
 //
 // This is the project's north star (capability-per-bit / ternary ~1.58-bit weights) realized in a
 // GPU kernel -- and the answer to "don't just copy MLX." MLX has no ternary Metal GEMM. We don't try

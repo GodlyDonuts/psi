@@ -1,4 +1,4 @@
-// main.cpp — Step 1 driver.
+// main.cpp - Step 1 driver.
 //
 //   1) grad_checks(): finite-difference check on every op, individually and composed.
 //      Same correctness net as Step 0, now for tensor ops. This is what lets us trust
@@ -81,7 +81,7 @@ static void grad_checks() {
 
 static void train_xor_tensor() {
     std::mt19937 rng(42);
-    // Fan-in-scaled init (Xavier ~ 1/sqrt(fan_in)) — the Step-0 math lesson, applied.
+    // Fan-in-scaled init (Xavier ~ 1/sqrt(fan_in)) - the Step-0 math lesson, applied.
     Tensor W1 = Tensor::randn({2, 16}, rng, std::sqrt(1.0 / 2));
     Tensor b1 = Tensor({16});                         // zeros
     Tensor W2 = Tensor::randn({16, 1}, rng, std::sqrt(1.0 / 16));

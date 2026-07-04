@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# status.sh — one-glance campaign status (run on the cluster, or via: nssh 'bash ~/Psi/src/step4_cuda/status.sh')
+# status.sh - one-glance campaign status (run on the cluster, or via: nssh 'bash ~/Psi/src/step4_cuda/status.sh')
 cd "$HOME/Psi" 2>/dev/null || cd ~
 echo "=== queue ($(date '+%H:%M:%S')) ==="
 squeue -u sa305415 -o "%.10i %.14j %.2t %.10M %.12l %.20R" 2>/dev/null

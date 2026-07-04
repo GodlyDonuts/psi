@@ -1,4 +1,4 @@
-// tokenizer.hpp — pluggable tokenizer (char-level for now).
+// tokenizer.hpp - pluggable tokenizer (char-level for now).
 //
 // Part of framework-ization: the vocab is no longer baked into main. A byte/BPE tokenizer
 // can implement the same fit/encode/decode interface later for the `psi-stories` model.
